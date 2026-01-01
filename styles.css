@@ -1,3 +1,4 @@
+/* General Styles */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
@@ -13,48 +14,6 @@ header {
   text-align: center;
 }
 
-section#dashboard {
-  padding: 20px;
-  max-width: 900px;
-  margin: auto;
-}
-
-.card‑selector {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-  gap: 8px;
-  margin: 15px 0;
-}
-
-.cardBtn {
-  padding: 10px;
-  border: 1px solid #888;
-  border-radius: 4px;
-  cursor: pointer;
-  background: #fff;
-  font-weight: bold;
-}
-
-.cardBtn:hover {
-  background: #eef;
-}
-
-.status p,
-.hints p {
-  font-size: 1.1em;
-}
-
-.controls button {
-  margin: 10px 5px;
-  padding: 8px 16px;
-  font-size: 1em;
-  cursor: pointer;
-  border: none;
-  background: #2a72b2;
-  color: #fff;
-  border-radius: 4px;
-}
-
 footer {
   text-align: center;
   padding: 12px;
@@ -65,6 +24,40 @@ footer {
   width: 100%;
 }
 
+/* Dashboard Layout */
+section#dashboard {
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+}
+
+/* Card Selector Section */
+.card‑selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 15px 0;
+  align-items: center;
+}
+
+.cardBtn {
+  padding: 10px 12px;
+  border: 1px solid #888;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #fff;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: center;
+  flex: 0 0 auto;
+  transition: background 0.2s;
+}
+
+.cardBtn:hover {
+  background: #ddeeff;
+}
+
+/* Player & Dealer Hand Input */
 .playerDealerSelect {
   margin: 15px 0;
 }
@@ -74,6 +67,36 @@ footer {
   font-weight: bold;
 }
 
+.playerDealerSelect select {
+  padding: 4px;
+  margin-left: 4px;
+}
+
+/* Game Stats */
+.status p,
+.hints p {
+  font-size: 1.1em;
+  margin: 6px 0;
+}
+
+/* Buttons */
+.controls button {
+  margin: 10px 5px;
+  padding: 8px 16px;
+  font-size: 1em;
+  cursor: pointer;
+  border: none;
+  background: #2a72b2;
+  color: #fff;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.controls button:hover {
+  background-color: #245a90;
+}
+
+/* Hint History */
 #historyList ul {
   list-style: none;
   padding-left: 0;
