@@ -1,195 +1,107 @@
-/*********************
-  GAME STATE
-*********************/
 const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
 const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
 
 let runningCount = 0;
-let deckSize = 312; // 6 decks
+let remainingCards = 312;
 
-let playerHand = [];
-let dealerHand = [];
-let hasSplit = false;
-
-/*********************
-  SETUP DROPDOWNS
-*********************/
-function populateSelects() {
-  ["p1","p2","dealer"].forEach(id => {
-    const sel = document.getElementById(id);
-    RANKS.forEach(r => {
-      const opt = document.createElement("option");
-      opt.value = r;
-      opt.textContent = r;
-      sel.appendChild(opt);
+function populate() {
+  ["p1","p2","dealer"].forEach(id=>{
+    const sel=document.getElementById(id);
+    RANKS.forEach(r=>{
+      const o=document.createElement("option");
+      o.value=r;o.textContent=r;
+      sel.appendChild(o);
     });
   });
 }
 
-/*********************
-  UTILS
-*********************/
-function handValue(hand) {
-  let total = 0, aces = 0;
-  hand.forEach(c => {
-    if (["J","Q","K","10"].includes(c)) total += 10;
-    else if (c === "A") { total += 11; aces++; }
-    else total += parseInt(c);
+function handValue(hand){
+  let total=0, aces=0;
+  hand.forEach(c=>{
+    if(["J","Q","K","10"].includes(c)) total+=10;
+    else if(c==="A"){total+=11;aces++;}
+    else total+=parseInt(c);
   });
-  while (total > 21 && aces) {
-    total -= 10;
-    aces--;
-  }
+  while(total>21 && aces){total-=10;aces--;}
   return total;
 }
 
-function renderCards(id, hand) {
-  const el = document.getElementById(id);
-  el.innerHTML = "";
-  hand.forEach(c => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.textContent = c;
-    el.appendChild(div);
-  });
+function trueCount(){
+  return (runningCount / (remainingCards/52)).toFixed(2);
 }
 
-function updateCount(card) {
-  runningCount += hiLo[card];
-  deckSize--;
+function cardValue(c){
+  if(["J","Q","K"].includes(c)) return 10;
+  if(c==="A") return 11;
+  return parseInt(c);
 }
 
-/*********************
-  START HAND (MANUAL)
-*********************/
-document.getElementById("startHand").onclick = () => {
-  const c1 = document.getElementById("p1").value;
-  const c2 = document.getElementById("p2").value;
-  const dealer = document.getElementById("dealer").value;
+function basicStrategy(player,dealer){
+  const total=handValue(player);
+  const up=cardValue(dealer);
+  const isPair = player[0]===player[1];
+  const isSoft = player.includes("A") && total<=21;
 
-  playerHand = [c1, c2];
-  dealerHand = [dealer];
-  hasSplit = false;
-
-  updateCount(c1);
-  updateCount(c2);
-  updateCount(dealer);
-
-  updateUI();
-  document.getElementById("status").textContent = "Hand Started.";
-};
-
-/*********************
-  ACTION BUTTONS
-*********************/
-document.getElementById("hitBtn").onclick = () => {
-  const card = prompt("Enter next card dealt to Player:");
-  if (!RANKS.includes(card)) return alert("Invalid card");
-  playerHand.push(card);
-  updateCount(card);
-  step();
-};
-
-document.getElementById("standBtn").onclick = () => finishHand();
-
-document.getElementById("doubleBtn").onclick = () => {
-  const card = prompt("Enter card for Double:");
-  if (!RANKS.includes(card)) return alert("Invalid card");
-  playerHand.push(card);
-  updateCount(card);
-  finishHand();
-};
-
-document.getElementById("splitBtn").onclick = () => {
-  if (hasSplit) return alert("Only one split allowed.");
-  if (playerHand[0] !== playerHand[1]) return alert("Not a pair.");
-
-  hasSplit = true;
-  alert("Split acknowledged. Play each hand manually (future upgrade).");
-};
-
-/*********************
-  HAND FLOW
-*********************/
-function step() {
-  updateUI();
-  if (handValue(playerHand) > 21) {
-    document.getElementById("status").textContent = "Player Busts.";
-    saveHistory("BUST");
-  }
-}
-
-function finishHand() {
-  const dealerDown = prompt("Enter Dealer's Hole Card:");
-  if (!RANKS.includes(dealerDown)) return alert("Invalid card");
-
-  dealerHand.push(dealerDown);
-  updateCount(dealerDown);
-
-  while (handValue(dealerHand) < 17) {
-    const next = prompt("Enter Dealer Draw Card:");
-    if (!RANKS.includes(next)) return alert("Invalid card");
-    dealerHand.push(next);
-    updateCount(next);
+  // Pairs
+  if(isPair){
+    if(player[0]==="A"||player[0]==="8") return "Split";
+    if(["10","J","Q","K"].includes(player[0])) return "Stand";
   }
 
-  const p = handValue(playerHand);
-  const d = handValue(dealerHand);
+  // Soft hands
+  if(isSoft){
+    if(total>=19) return "Stand";
+    if(total===18){
+      if(up>=3 && up<=6) return "Double";
+      if(up>=9) return "Hit";
+      return "Stand";
+    }
+    return "Hit";
+  }
 
-  let result = "";
-  if (p > 21) result = "LOSE";
-  else if (d > 21 || p > d) result = "WIN";
-  else if (p === d) result = "PUSH";
-  else result = "LOSE";
-
-  document.getElementById("status").textContent = `Result: ${result}`;
-  saveHistory(result);
-  updateUI();
+  // Hard hands
+  if(total>=17) return "Stand";
+  if(total>=13 && up<=6) return "Stand";
+  if(total===12 && up>=4 && up<=6) return "Stand";
+  if(total===11) return "Double";
+  if(total===10 && up<=9) return "Double";
+  if(total===9 && up>=3 && up<=6) return "Double";
+  return "Hit";
 }
 
-/*********************
-  UI UPDATE
-*********************/
-function updateUI() {
-  renderCards("playerCards", playerHand);
-  renderCards("dealerCards", dealerHand);
-
-  document.getElementById("playerTotal").textContent = handValue(playerHand);
-  document.getElementById("dealerUp").textContent = dealerHand[0] || "-";
-  document.getElementById("runningCount").textContent = runningCount;
-  document.getElementById("trueCount").textContent =
-    (runningCount / (deckSize / 52)).toFixed(2);
+function deviation(advice, tc){
+  if(advice==="Stand" && tc>=3) return "Stand (High count favors standing)";
+  if(advice==="Hit" && tc<=-1) return "Hit (Low count, fewer tens left)";
+  return advice;
 }
 
-/*********************
-  HISTORY
-*********************/
-function saveHistory(result) {
-  const history = JSON.parse(localStorage.getItem("bjHistory") || "[]");
-  history.push({
-    time: new Date().toLocaleTimeString(),
-    result,
-    count: runningCount
+document.getElementById("start").onclick = ()=>{
+  runningCount=0;
+  remainingCards=312;
+
+  const p1=document.getElementById("p1").value;
+  const p2=document.getElementById("p2").value;
+  const dealer=document.getElementById("dealer").value;
+  const others=document.getElementById("others").value.split(",").map(c=>c.trim()).filter(Boolean);
+
+  const all=[p1,p2,dealer,...others];
+  all.forEach(c=>{
+    runningCount+=hiLo[c];
+    remainingCards--;
   });
-  localStorage.setItem("bjHistory", JSON.stringify(history));
-  renderHistory();
-}
 
-function renderHistory() {
-  const history = JSON.parse(localStorage.getItem("bjHistory") || "[]");
-  const ul = document.getElementById("historyList");
-  ul.innerHTML = "";
-  history.slice(-10).reverse().forEach(h => {
-    const li = document.createElement("li");
-    li.textContent = `${h.time} – ${h.result} (Count: ${h.count})`;
-    ul.appendChild(li);
-  });
-}
+  const player=[p1,p2];
+  let advice=basicStrategy(player,dealer);
+  const tc=parseFloat(trueCount());
+  advice=deviation(advice,tc);
 
-/*********************
-  INIT
-*********************/
-window.onload = () => {
-  populateSelects();
-  renderHistory();
+  document.getElementById("yourCards").textContent=player.join(", ");
+  document.getElementById("dealerCard").textContent=dealer;
+  document.getElementById("rc").textContent=runningCount;
+  document.getElementById("tc").textContent=tc;
+  document.getElementById("advice").textContent=advice;
+  document.getElementById("explain").textContent =
+    `Count includes your cards, dealer card, and all other visible player cards.`;
 };
+
+window.onload=populate;
