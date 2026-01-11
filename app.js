@@ -3,55 +3,16 @@
 *************************/
 const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
 const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
-const basicTable = {
-  hard: {
-    17: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    16: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    15: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    14: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    13: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    12: {2:"H",3:"H",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    11: {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
-    10: {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
-    9:  {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    8:  {2:"H",3:"H",4:"H",5:"H",6:"H",7:"H",8:"H",9:"H",10:"H",A:"H"}
-  },
-  soft: {
-    20: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    19: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    18: {2:"S",3:"D",4:"D",5:"D",6:"D",7:"S",8:"S",9:"H",10:"H",A:"H"},
-    17: {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    16: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    15: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    14: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    13: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"}
-  },
-  pairs: {
-    "A":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
-    "10": {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    "9":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"S",8:"P",9:"P",10:"S",A:"S"},
-    "8":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
-    "7":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
-    "6":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    "5":  {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
-    "4":  {2:"H",3:"H",4:"H",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    "3":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
-    "2":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"}
-  }
-};
 
 let runningCount = 0;
 let remainingCards = 312;
-let dealerHand = [];
-let playerHands = [];
 let historyArr = JSON.parse(localStorage.getItem("bjHistory")) || [];
 
 let winRateChart = null;
 let trueCountChart = null;
-// Basic Strategy Master Lookup
 
 /*************************
- INIT
+ SETUP
 *************************/
 window.onload = () => {
   populateSelects();
@@ -60,10 +21,11 @@ window.onload = () => {
 };
 
 /*************************
- DROPDOWN POPULATION
+ DROPDOWNS
 *************************/
 function populateSelects() {
-  ["p1","p2","dealerUp","dealerHole"].forEach(id => {
+  const ids = Array.from({length: 14}, (_, i) => `p${i+1}`).concat("dealerUp");
+  ids.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     sel.innerHTML = "";
@@ -141,112 +103,121 @@ function applyDeviation(advice, tc) {
 }
 
 /*************************
- STRATEGY OVERLAY
+ BASIC STRATEGY TABLE
 *************************/
+const basicTable = {
+  hard: {
+    17: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    16: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    15: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    14: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    13: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    12: {2:"H",3:"H",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    11: {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
+    10: {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
+    9:  {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    8:  {2:"H",3:"H",4:"H",5:"H",6:"H",7:"H",8:"H",9:"H",10:"H",A:"H"}
+  },
+  soft: {
+    20: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    19: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    18: {2:"S",3:"D",4:"D",5:"D",6:"D",7:"S",8:"S",9:"H",10:"H",A:"H"},
+    17: {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    16: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    15: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    14: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    13: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"}
+  },
+  pairs: {
+    "A":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
+    "10": {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    "9":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"S",8:"P",9:"P",10:"S",A:"S"},
+    "8":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
+    "7":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
+    "6":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    "5":  {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
+    "4":  {2:"H",3:"H",4:"H",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    "3":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
+    "2":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"}
+  }
+};
+
 function buildStrategyTables() {
   const container = document.getElementById("strategyTables");
-  if (!container) return;
-  container.innerHTML = ""; // Clear
-
-  // Build Hard, Soft, Pair tables
-  const sections = ["hard","soft","pairs"];
-  sections.forEach(type => {
-    const table = document.createElement("table");
-    table.className = "basicTable";
-
-    let header = `<tr><th>${type.toUpperCase()}</th>`;
-    RANKS.forEach(d => header += `<th>${d}</th>`);
-    header += "</tr>";
-    table.innerHTML = header;
-
-    Object.keys(basicTable[type]).forEach(rowKey => {
-      let row = `<tr data-type="${type}" data-value="${rowKey}"><td>${rowKey}</td>`;
-      RANKS.forEach(d => {
-        const cell = basicTable[type][rowKey][d] || "-";
-        row += `<td data-dealer="${d}" data-type="${type}" data-row="${rowKey}">${cell}</td>`;
+  container.innerHTML = "";
+  ["hard","soft","pairs"].forEach(type => {
+    const t = document.createElement("table");
+    t.className="basicTable";
+    let header=`<tr><th>${type.toUpperCase()}</th>`;
+    RANKS.forEach(d=>header+=`<th>${d}</th>`);
+    header+="</tr>";
+    t.innerHTML = header;
+    Object.keys(basicTable[type]).forEach(rKey=>{
+      let row=`<tr data-type="${type}" data-key="${rKey}"><td>${rKey}</td>`;
+      RANKS.forEach(d=>{
+        const m=basicTable[type][rKey][d]||"-";
+        row+=`<td data-dealer="${d}" data-dealertype="${type}" data-row="${rKey}">${m}</td>`;
       });
-      row += "</tr>";
-      table.innerHTML += row;
+      row+="</tr>";
+      t.innerHTML+=row;
     });
-
-    container.appendChild(table);
+    container.appendChild(t);
   });
 }
 
-function highlightStrategy(player, dealerUp) {
-  document.querySelectorAll(".basicTable td.highlight")
-    .forEach(c => c.classList.remove("highlight"));
-
+function highlightStrategy(player,dealerUp) {
+  document.querySelectorAll(".highlight").forEach(c=>c.classList.remove("highlight"));
   const total = handValue(player);
   const up = dealerUp;
-  const isPair = player[0] === player[1];
-  const isSoft = player.includes("A") && total <= 21 && !["10","J","Q","K"].includes(player[0]);
-
-  let type, key;
-  if (isPair) { type = "pairs"; key = player[0]; }
-  else if (isSoft) { type = "soft"; key = total.toString(); }
-  else { type = "hard"; key = (total < 8 ? "8" : total.toString()); }
-
-  document.querySelectorAll(`td[data-type="${type}"][data-row="${key}"][data-dealer="${up}"]`)
-    .forEach(cell => cell.classList.add("highlight"));
+  const isPair = player[0]===player[1];
+  const isSoft = player.includes("A") && total<=21 && !["10","J","Q","K"].includes(player[0]);
+  let type,key;
+  if(isPair){ type="pairs"; key=player[0]; }
+  else if(isSoft){ type="soft"; key=total.toString(); }
+  else { type="hard"; key=(total<8?"8":total.toString()); }
+  document.querySelectorAll(`td[data-dealertype="${type}"][data-row="${key}"][data-dealer="${up}"]`)
+    .forEach(cell=>cell.classList.add("highlight"));
 }
 
-document.getElementById("showStrategyBtn").onclick = () => {
-  document.getElementById("strategyOverlay").classList.remove("hidden");
-  buildStrategyTables();
-};
-
-document.getElementById("closeStrategyBtn").onclick = () => {
-  document.getElementById("strategyOverlay").classList.add("hidden");
-};
-
 /*************************
- HAND EVALUATION (IMMEDIATE HINT)
+ HAND EVALUATION
 *************************/
 document.getElementById("evaluate").onclick = () => {
-  const p1 = document.getElementById("p1").value;
-  const p2 = document.getElementById("p2").value;
-  const up = document.getElementById("dealerUp").value;
-  const hole = document.getElementById("dealerHole").value;
-  const otherText = document.getElementById("others").value.trim();
+  const selectedCards = [];
+  for(let i=1; i<=14; i++){
+    const val=document.getElementById(`p${i}`).value;
+    if(val) selectedCards.push(val);
+  }
+  const up=document.getElementById("dealerUp").value;
+  const bookLeanText=document.getElementById("bookLean").value.trim();
 
-  const others = otherText
-    ? otherText.split(",").map(x => x.trim()).filter(x => RANKS.includes(x))
-    : [];
-
-  // reset counts per shoe
-  runningCount = 0;
-  remainingCards = 312;
-
-  [p1, p2, up, hole, ...others].forEach(c => {
-    runningCount += hiLo[c] || 0;
+  runningCount=0;
+  remainingCards=312;
+  [...selectedCards, up].forEach(c=>{
+    runningCount += hiLo[c]||0;
     remainingCards--;
   });
 
-  dealerHand = [up, hole];
-  playerHands = [[p1, p2]];
+  document.getElementById("yourCards").textContent= `${document.getElementById("p1").value}, ${document.getElementById("p2").value}`;
+  document.getElementById("dealerCard").textContent = up;
+  document.getElementById("historyBookLean").textContent = bookLeanText;
 
-  // display cards
-  document.getElementById("yourCards").textContent = `${p1}, ${p2}`;
-  document.getElementById("dealerCards").textContent = `${up}, ${hole}`;
+  const yourHand=[document.getElementById("p1").value,document.getElementById("p2").value];
+  const base=basicStrategy(yourHand, up);
+  const tc=parseFloat(trueCount());
+  const advice=applyDeviation(base, tc);
 
-  // compute advice
-  const base = basicStrategy([p1, p2], up);
-  const tcVal = parseFloat(trueCount());
-  const advice = applyDeviation(base, tcVal);
-
-  document.getElementById("rc").textContent = runningCount;
-  document.getElementById("tc").textContent = tcVal;
-  document.getElementById("advice").textContent = advice;
-  document.getElementById("explanation").textContent = "Basic Strategy + True Count";
-
-  sessionStorage.setItem("currentAdvice", advice);
-  sessionStorage.setItem("currentHand", JSON.stringify([p1, p2]));
-  sessionStorage.setItem("currentDealer", up);
+  document.getElementById("rc").textContent=runningCount;
+  document.getElementById("tc").textContent=tc;
+  document.getElementById("advice").textContent=advice;
+  document.getElementById("explanation").textContent="Basic + True Count deviation";
 
   buildStrategyTables();
-  highlightStrategy([p1, p2], up);
-  document.getElementById("strategyOverlay").classList.remove("hidden");
+  highlightStrategy(yourHand, up);
+
+  sessionStorage.setItem("currentAdvice", advice);
+  sessionStorage.setItem("currentHand", JSON.stringify(yourHand));
+  sessionStorage.setItem("currentDealer", up);
 
   renderHistory();
   updateCharts();
@@ -256,77 +227,59 @@ document.getElementById("evaluate").onclick = () => {
  RECORD RESULT
 *************************/
 document.getElementById("outcome").onclick = () => {
-  const r = prompt("Enter result (WIN/LOSE/PUSH):").toUpperCase();
-  if (!["WIN","LOSE","PUSH"].includes(r)) return alert("Invalid");
-
-  const advice = sessionStorage.getItem("currentAdvice");
-  const hand = JSON.parse(sessionStorage.getItem("currentHand"));
-  const dealer = sessionStorage.getItem("currentDealer");
+  const r=prompt("Enter result (WIN/LOSE/PUSH):").toUpperCase();
+  if(!["WIN","LOSE","PUSH"].includes(r)) return alert("Invalid");
+  const advice=sessionStorage.getItem("currentAdvice");
+  const hand=JSON.parse(sessionStorage.getItem("currentHand"));
+  const dealer=sessionStorage.getItem("currentDealer");
+  const bookLeanLogged=document.getElementById("historyBookLean").textContent;
 
   historyArr.push({
-    time: new Date().toLocaleTimeString(),
-    player: hand,
-    dealer,
-    advice,
-    result: r,
-    tc: trueCount()
+    time:new Date().toLocaleTimeString(),
+    player:hand,dealer,advice,result:r,tc:trueCount(),bookLean:bookLeanLogged
   });
 
-  localStorage.setItem("bjHistory", JSON.stringify(historyArr));
+  localStorage.setItem("bjHistory",JSON.stringify(historyArr));
   renderHistory();
   updateCharts();
 };
 
 /*************************
- HISTORY + CHARTS
+ HISTORY & CHARTS
 *************************/
-function renderHistory() {
-  const ul = document.getElementById("historyList");
-  ul.innerHTML = "";
-  historyArr.slice(-15).reverse().forEach(h => {
-    const li = document.createElement("li");
-    li.textContent = `${h.time} — ${h.player.join(", ")} vs ${h.dealer} : ${h.advice} → ${h.result} (TC=${h.tc})`;
+function renderHistory(){
+  const ul=document.getElementById("historyList");
+  ul.innerHTML="";
+  historyArr.slice(-15).reverse().forEach(h=>{
+    const li=document.createElement("li");
+    li.textContent=`${h.time} ─ ${h.player.join(",")} vs ${h.dealer} | ${h.advice} → ${h.result} | TC ${h.tc} | Lean: ${h.bookLean}`;
     ul.appendChild(li);
   });
 }
 
-function updateCharts() {
-  const results = historyArr.map(h => h.result);
-  const wins = results.filter(x => x === "WIN").length;
-  const losses = results.filter(x => x === "LOSE").length;
-  const pushes = results.filter(x => x === "PUSH").length;
+function updateCharts(){
+  const res=historyArr.map(h=>h.result);
+  const wins=res.filter(r=>"WIN").length;
+  const losses=res.filter(r=>"LOSE").length;
+  const pushes=res.filter(r=>"PUSH").length;
 
-  const ctx1 = document.getElementById("winRateChart")?.getContext("2d");
-  if (ctx1) {
-    if (winRateChart) winRateChart.destroy();
-    winRateChart = new Chart(ctx1, {
-      type: "pie",
-      data: {
-        labels: ["WIN","LOSE","PUSH"],
-        datasets: [{
-          data: [wins, losses, pushes],
-          backgroundColor: ["#4caf50","#f44336","#ff9800"]
-        }]
-      }
-    });
+  const ctx1=document.getElementById("winRateChart")?.getContext("2d");
+  if(ctx1){
+    if(winRateChart) winRateChart.destroy();
+    winRateChart=new Chart(ctx1,{type:"pie",data:{
+      labels:["WIN","LOSE","PUSH"],
+      datasets:[{data:[wins,losses,pushes],backgroundColor:["#4caf50","#f44336","#ff9800"]}]
+    }});
   }
 
-  const counts = historyArr.map(h => parseFloat(h.tc));
-  const ctx2 = document.getElementById("trueCountChart")?.getContext("2d");
-  if (ctx2) {
-    if (trueCountChart) trueCountChart.destroy();
-    trueCountChart = new Chart(ctx2, {
-      type: "line",
-      data: {
-        labels: counts.map((_,i) => i+1),
-        datasets: [{
-          label: "True Count",
-          data: counts,
-          borderColor: "#2196f3",
-          fill: false
-        }]
-      }
-    });
+  const counts=historyArr.map(h=>parseFloat(h.tc));
+  const ctx2=document.getElementById("trueCountChart")?.getContext("2d");
+  if(ctx2){
+    if(trueCountChart) trueCountChart.destroy();
+    trueCountChart=new Chart(ctx2,{type:"line",data:{
+      labels:counts.map((_,i)=>i+1),
+      datasets:[{label:"True Count",data:counts,borderColor:"#2196f3",fill:false}]
+    }});
   }
 }
 
@@ -334,19 +287,19 @@ function updateCharts() {
  NEXT HAND / NEW SHOE
 *************************/
 document.getElementById("nextHand").onclick = () => {
-  document.getElementById("p1").selectedIndex = 0;
-  document.getElementById("p2").selectedIndex = 0;
-  document.getElementById("dealerUp").selectedIndex = 0;
-  document.getElementById("dealerHole").selectedIndex = 0;
-  document.getElementById("others").value = "";
-  document.getElementById("advice").textContent = "—";
-  document.getElementById("explanation").textContent = "";
+  for(let i=1;i<=14;i++){
+    document.getElementById(`p${i}`).selectedIndex=0;
+  }
+  document.getElementById("dealerUp").selectedIndex=0;
+  document.getElementById("bookLean").value="";
+  document.getElementById("advice").textContent="—";
+  document.getElementById("explanation").textContent="";
 };
 
 document.getElementById("newShoe").onclick = () => {
-  runningCount = 0;
-  remainingCards = 312;
-  document.getElementById("rc").textContent = "0";
-  document.getElementById("tc").textContent = "0";
+  runningCount=0;
+  remainingCards=312;
+  document.getElementById("rc").textContent="0";
+  document.getElementById("tc").textContent="0";
   alert("New shoe started — count reset.");
 };
