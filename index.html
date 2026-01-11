@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Blackjack Trainer Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="styles.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <title>Blackjack Trainer Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <header>
   <h1>Blackjack Trainer Pro</h1>
-  <p>Manual Entry • True Count • Strategy Overlay</p>
+  <p>Manual Entry • True Count • Dynamic Seats</p>
 </header>
 
 <section id="entry">
@@ -23,16 +22,12 @@
     <label>Your Card 2: <select id="p2"></select></label>
   </div>
 
-  <h3>Other Players (visible cards)</h3>
+  <h3>Other Players</h3>
+  <div id="otherPlayers"></div>
+
   <div class="row">
-    <label>Player 2: <select id="p3"></select><select id="p4"></select></label>
-    <label>Player 3: <select id="p5"></select><select id="p6"></select></label>
-    <label>Player 4: <select id="p7"></select><select id="p8"></select></label>
-  </div>
-  <div class="row">
-    <label>Player 5: <select id="p9"></select><select id="p10"></select></label>
-    <label>Player 6: <select id="p11"></select><select id="p12"></select></label>
-    <label>Player 7: <select id="p13"></select><select id="p14"></select></label>
+    <button id="addSeat">Add Seat</button>
+    <button id="removeSeat">Remove Seat</button>
   </div>
 
   <div class="row">
@@ -50,7 +45,7 @@
 </section>
 
 <section id="strategyInline">
-  <h2>Basic Strategy Table</h2>
+  <h2>Basic Strategy Table (Visible)</h2>
   <div id="strategyTables"></div>
 </section>
 
