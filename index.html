@@ -1,3 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blackjack Trainer Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Blackjack Trainer Pro</h1>
+  <p>Manual Entry • True Count • Strategy Overlay</p>
+</header>
+
+<button id="showStrategyBtn">Show Basic Strategy Table</button>
+
+<!-- Strategy Overlay -->
+<div id="strategyOverlay" class="hidden">
+  <div id="strategyContent">
+    <button id="closeStrategyBtn">Close</button>
+    <h2>Basic Strategy Table</h2>
+    <div id="strategyTables"></div>
+  </div>
+</div>
+
 <section id="entry">
   <h2>Enter Cards</h2>
 
@@ -5,6 +33,7 @@
     <label>Your Card 1:
       <select id="p1"></select>
     </label>
+
     <label>Your Card 2:
       <select id="p2"></select>
     </label>
@@ -26,3 +55,31 @@
     <button id="newShoe">New Shoe</button>
   </div>
 </section>
+
+<section id="results">
+  <p>Your Cards: <span id="yourCards"></span></p>
+  <p>Dealer Cards: <span id="dealerCards"></span></p>
+
+  <p>Running Count: <strong id="rc">0</strong></p>
+  <p>True Count: <strong id="tc">0</strong></p>
+
+  <p class="hint">Recommended Move: <span id="advice">—</span></p>
+  <p id="explanation"></p>
+
+  <p>Outcome (click to enter): <span id="outcome">—</span></p>
+</section>
+
+<section id="charts">
+  <h2>Charts</h2>
+  <canvas id="winRateChart"></canvas>
+  <canvas id="trueCountChart"></canvas>
+</section>
+
+<section id="history">
+  <h2>History</h2>
+  <ul id="historyList"></ul>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
