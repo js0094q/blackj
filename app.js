@@ -21,7 +21,7 @@ window.onload = () => {
 };
 
 /*************************
- DROP DOWNS
+ DROPDOWN POPULATION
 *************************/
 function populateSelects() {
   const ids = ["p1","p2","dealerUp"];
@@ -64,7 +64,7 @@ function trueCount() {
 }
 
 /*************************
- BASIC STRATEGY
+ BASIC STRATEGY + DEVIATION
 *************************/
 function basicStrategy(player, dealerUp) {
   const total = handValue(player);
@@ -73,35 +73,35 @@ function basicStrategy(player, dealerUp) {
   const isSoft = player.includes("A") && total <= 21 && !["10","J","Q","K"].includes(player[0]);
 
   if (isPair) {
-    if (player[0]==="A" || player[0]==="8") return "Split";
+    if (player[0] === "A" || player[0] === "8") return "Split";
     if (["10","J","Q","K"].includes(player[0])) return "Stand";
   }
   if (isSoft) {
-    if (total>=19) return "Stand";
-    if (total===18) {
-      if (up>=3 && up<=6) return "Double";
-      if (up>=9) return "Hit";
+    if (total >= 19) return "Stand";
+    if (total === 18) {
+      if (up >= 3 && up <= 6) return "Double";
+      if (up >= 9) return "Hit";
       return "Stand";
     }
     return "Hit";
   }
-  if (total>=17) return "Stand";
-  if (total>=13 && up<=6) return "Stand";
-  if (total===12 && up>=4 && up<=6) return "Stand";
-  if (total===11) return "Double";
-  if (total===10 && up<=9) return "Double";
-  if (total===9 && up>=3 && up<=6) return "Double";
+  if (total >= 17) return "Stand";
+  if (total >= 13 && up <= 6) return "Stand";
+  if (total === 12 && up >= 4 && up <= 6) return "Stand";
+  if (total === 11) return "Double";
+  if (total === 10 && up <= 9) return "Double";
+  if (total === 9 && up >= 3 && up <= 6) return "Double";
   return "Hit";
 }
 
 function applyDeviation(advice, tc) {
-  if (advice==="Stand" && tc>=3) return "Stand (High Count)";
-  if (advice==="Hit" && tc<=-1) return "Hit (Low Count)";
+  if (advice === "Stand" && tc >= 3) return "Stand (High Count)";
+  if (advice === "Hit" && tc <= -1) return "Hit (Low Count)";
   return advice;
 }
 
 /*************************
- STRATEGY TABLE
+ BASIC STRATEGY TABLE
 *************************/
 const basicTable = {
   hard: {
@@ -116,9 +116,189 @@ const basicTable = {
     9:  {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
     8:  {2:"H",3:"H",4:"H",5:"H",6:"H",7:"H",8:"H",9:"H",10:"H",A:"H"}
   },
-  soft: {/* same as above... */},
-  pairs: {/* same as above... */}
+  soft: {
+    20: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    19: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    18: {2:"S",3:"D",4:"D",5:"D",6:"D",7:"S",8:"S",9:"H",10:"H",A:"H"},
+    17: {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    16: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    15: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    14: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    13: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"}
+  },
+  pairs: {
+    "A":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
+    "10": {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    "9":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"S",8:"P",9:"P",10:"S",A:"S"},
+    "8":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
+    "7":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
+    "6":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    "5":  {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
+    "4":  {2:"H",3:"H",4:"H",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    "3":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
+    "2":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"}
+  }
 };
 
-// function buildStrategyTables() and highlightStrategy() same as earlier
-// ❗ (Due to length limit, include those last shared functions unchanged)
+/*************************
+ BUILD & HIGHLIGHT TABLE
+*************************/
+function buildStrategyTables() {
+  const container = document.getElementById("strategyTables");
+  container.innerHTML = "";
+  ["hard","soft","pairs"].forEach(type => {
+    const t=document.createElement("table");
+    t.className="basicTable";
+    let header=`<tr><th>${type.toUpperCase()}</th>`;
+    RANKS.forEach(d => header+=`<th>${d}</th>`);
+    header+="</tr>";
+    t.innerHTML = header;
+    Object.keys(basicTable[type]).forEach(rKey => {
+      let row=`<tr data-type="${type}" data-key="${rKey}"><td>${rKey}</td>`;
+      RANKS.forEach(d => {
+        const move=basicTable[type][rKey][d]||"-";
+        row+=`<td data-dealertype="${type}" data-row="${rKey}" data-dealer="${d}">${move}</td>`;
+      });
+      row+="</tr>";
+      t.innerHTML+=row;
+    });
+    container.appendChild(t);
+  });
+}
+
+function highlightStrategy(player,dealerUp) {
+  document.querySelectorAll(".highlight").forEach(c => c.classList.remove("highlight"));
+  const total=handValue(player);
+  const up=dealerUp;
+  const isPair=player[0]===player[1];
+  const isSoft=player.includes("A") && total<=21 && !["10","J","Q","K"].includes(player[0]);
+  let type,key;
+  if(isPair){ type="pairs"; key=player[0]; }
+  else if(isSoft){ type="soft"; key=total.toString(); }
+  else{ type="hard"; key=(total<8?"8":total.toString()); }
+  document.querySelectorAll(`td[data-dealertype="${type}"][data-row="${key}"][data-dealer="${up}"]`)
+    .forEach(cell=>cell.classList.add("highlight"));
+}
+
+/*************************
+ HAND EVALUATION
+*************************/
+document.getElementById("evaluate").onclick = () => {
+  const selectedCards=[];
+  for(let i=1;i<=14;i++){
+    const el=document.getElementById(`p${i}`);
+    if(el && el.value) selectedCards.push(el.value);
+  }
+  const up=document.getElementById("dealerUp").value;
+
+  runningCount=0;
+  remainingCards=312;
+  [...selectedCards,up].forEach(c=>{
+    runningCount+=hiLo[c]||0;
+    remainingCards--;
+  });
+
+  const yourHand=[document.getElementById("p1").value,document.getElementById("p2").value];
+
+  document.getElementById("yourCards").textContent=`${yourHand.join(", ")}`;
+  document.getElementById("dealerCard").textContent=up;
+
+  const base=basicStrategy(yourHand,up);
+  const tc=parseFloat(trueCount());
+  const advice=applyDeviation(base,tc);
+
+  document.getElementById("rc").textContent=runningCount;
+  document.getElementById("tc").textContent=tc;
+  document.getElementById("advice").textContent=advice;
+  document.getElementById("explanation").textContent="Basic + True Count deviation";
+
+  buildStrategyTables();
+  highlightStrategy(yourHand, up);
+
+  sessionStorage.setItem("currentAdvice",advice);
+  sessionStorage.setItem("currentHand",JSON.stringify(yourHand));
+  sessionStorage.setItem("currentDealer",up);
+
+  renderHistory();
+  updateCharts();
+};
+
+/*************************
+ RECORD RESULT
+*************************/
+document.getElementById("outcome").onclick = () => {
+  const r=prompt("Enter result (WIN/LOSE/PUSH):").toUpperCase();
+  if(!["WIN","LOSE","PUSH"].includes(r)) return alert("Invalid");
+  const advice=sessionStorage.getItem("currentAdvice");
+  const hand=JSON.parse(sessionStorage.getItem("currentHand"));
+  const dealer=sessionStorage.getItem("currentDealer");
+
+  historyArr.push({
+    time:new Date().toLocaleTimeString(),
+    player:hand,dealer,advice,result:r,tc:trueCount()
+  });
+
+  localStorage.setItem("bjHistory",JSON.stringify(historyArr));
+  renderHistory();
+  updateCharts();
+};
+
+/*************************
+ HISTORY & CHARTS
+*************************/
+function renderHistory(){
+  const ul=document.getElementById("historyList");
+  ul.innerHTML="";
+  historyArr.slice(-15).reverse().forEach(h=>{
+    const li=document.createElement("li");
+    li.textContent=`${h.time} ─ ${h.player.join(",")} vs ${h.dealer} | ${h.advice} → ${h.result} (TC=${h.tc})`;
+    ul.appendChild(li);
+  });
+}
+
+function updateCharts(){
+  const res=historyArr.map(h=>h.result);
+  const wins=res.filter(r=>"WIN").length;
+  const losses=res.filter(r=>"LOSE").length;
+  const pushes=res.filter(r=>"PUSH").length;
+
+  const ctx1=document.getElementById("winRateChart")?.getContext("2d");
+  if(ctx1){
+    if(winRateChart) winRateChart.destroy();
+    winRateChart=new Chart(ctx1,{type:"pie",data:{
+      labels:["WIN","LOSE","PUSH"],
+      datasets:[{data:[wins,losses,pushes],backgroundColor:["#4caf50","#f44336","#ff9800"]}]
+    }});
+  }
+
+  const counts=historyArr.map(h=>parseFloat(h.tc));
+  const ctx2=document.getElementById("trueCountChart")?.getContext("2d");
+  if(ctx2){
+    if(trueCountChart) trueCountChart.destroy();
+    trueCountChart=new Chart(ctx2,{type:"line",data:{
+      labels:counts.map((_,i)=>i+1),
+      datasets:[{label:"True Count",data:counts,borderColor:"#2196f3",fill:false}]
+    }});
+  }
+}
+
+/*************************
+ NEXT HAND / NEW SHOE
+*************************/
+document.getElementById("nextHand").onclick = () => {
+  for(let i=1;i<=14;i++){
+    const el=document.getElementById(`p${i}`);
+    if(el) el.selectedIndex=0;
+  }
+  document.getElementById("dealerUp").selectedIndex=0;
+  document.getElementById("advice").textContent="—";
+  document.getElementById("explanation").textContent="";
+};
+
+document.getElementById("newShoe").onclick = () => {
+  runningCount=0;
+  remainingCards=312;
+  document.getElementById("rc").textContent="0";
+  document.getElementById("tc").textContent="0";
+  alert("New shoe started — count reset.");
+};
