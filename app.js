@@ -189,44 +189,59 @@ document.getElementById("closeStrategyBtn").onclick = () => {
  HAND EVALUATION
 *********************/
 document.getElementById("evaluate").onclick = () => {
-  const p1=document.getElementById("p1").value;
-  const p2=document.getElementById("p2").value;
-  const up=document.getElementById("dealerUp").value;
-  const hole=document.getElementById("dealerHole").value;
+  // read inputs
+  const p1 = document.getElementById("p1").value;
+  const p2 = document.getElementById("p2").value;
+  const up = document.getElementById("dealerUp").value;
+  const hole = document.getElementById("dealerHole").value;
   const otherText = document.getElementById("others").value.trim();
-  const others = otherText ? otherText.split(",").map(x=>x.trim()).filter(x=>RANKS.includes(x)) : [];
 
+  // parse other visible cards
+  const others = otherText
+    ? otherText.split(",").map(x => x.trim()).filter(x => RANKS.includes(x))
+    : [];
+
+  // reset counts for the current context
   runningCount = 0;
   remainingCards = 312;
-  [p1,p2,up,hole,...others].forEach(c=>{
-    runningCount+=hiLo[c]; remainingCards--;
+
+  // update running count for all visible cards
+  [p1, p2, up, hole, ...others].forEach(c => {
+    runningCount += hiLo[c] || 0;
+    remainingCards--;
   });
 
-  dealerHand=[up,hole];
-  playerHands=[[p1,p2]];
+  // store the hands
+  dealerHand = [up, hole];
+  playerHands = [[p1, p2]];
 
+  // update UI displays
   document.getElementById("yourCards").textContent = `${p1}, ${p2}`;
   document.getElementById("dealerCards").textContent = `${up}, ${hole}`;
-
-  const base = basicStrategy([p1,p2],up);
-  const tc = parseFloat(trueCount());
-  const advice = applyDeviation(base,tc);
-
   document.getElementById("rc").textContent = runningCount;
-  document.getElementById("tc").textContent = tc;
-  document.getElementById("advice").textContent = advice;
-  document.getElementById("explanation").textContent = "Basic + True Count deviation";
+  document.getElementById("tc").textContent = trueCount();
 
-  sessionStorage.setItem("currentAdvice",advice);
-  sessionStorage.setItem("currentHand", JSON.stringify([p1,p2]));
-  sessionStorage.setItem("currentDealer", up);
+  // instantly compute suggested action
+  const baseAdvice = basicStrategy([p1, p2], up);
+  const tcVal = parseFloat(trueCount());
+  const finalAdvice = applyDeviation(baseAdvice, tcVal);
 
+  document.getElementById("advice").textContent = finalAdvice;
+  document.getElementById("explanation").textContent = "Instant hint based on current table";
+
+  // show strategy overlay automatically
   buildStrategyTables();
-  highlightStrategy([p1,p2], up);
+  highlightStrategy([p1, p2], up);
   document.getElementById("strategyOverlay").classList.remove("hidden");
 
-  updateCharts();
+  // save for later result tracking
+  sessionStorage.setItem("currentAdvice", finalAdvice);
+  sessionStorage.setItem("currentHand", JSON.stringify([p1, p2]));
+  sessionStorage.setItem("currentDealer", up);
+
+  // update history UI + charts
   renderHistory();
+  updateCharts();
 };
 
 /*********************
