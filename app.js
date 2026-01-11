@@ -3,17 +3,6 @@
 *************************/
 const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
 const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
-
-let runningCount = 0;
-let remainingCards = 312;
-let dealerHand = [];
-let playerHands = [];
-let historyArr = JSON.parse(localStorage.getItem("bjHistory")) || [];
-
-let winRateChart = null;
-let trueCountChart = null;
-// Basic Strategy Master Lookup
-
 const basicTable = {
   hard: {
     17: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
@@ -50,6 +39,16 @@ const basicTable = {
     "2":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"}
   }
 };
+
+let runningCount = 0;
+let remainingCards = 312;
+let dealerHand = [];
+let playerHands = [];
+let historyArr = JSON.parse(localStorage.getItem("bjHistory")) || [];
+
+let winRateChart = null;
+let trueCountChart = null;
+// Basic Strategy Master Lookup
 
 /*************************
  INIT
