@@ -1,6 +1,6 @@
 body {
   font-family: Arial, sans-serif;
-  background: #f6f6f6;
+  background: #fafafa;
   margin: 0;
   padding: 0;
 }
@@ -50,17 +50,14 @@ button:hover {
   color: darkgreen;
 }
 
-#historyList {
-  list-style: none;
-  padding-left: 0;
-}
-
-#historyList li {
-  padding: 4px 0;
-  border-bottom: 1px solid #ddd;
-}
-
-#stats p {
+#timer {
   font-size: 1.1em;
-  margin: 4px 0;
+  font-weight: bold;
+  text-align: center;
+  color: #444;
+}
+
+#charts canvas {
+  max-width: 100%;
+  margin: 15px 0;
 }
