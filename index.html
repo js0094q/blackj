@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Blackjack Trainer Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,39 +12,33 @@
 
 <header>
   <h1>Blackjack Trainer Pro</h1>
-  <p>Manual Entry • True Count • Dynamic Seats</p>
+  <p>Manual Entry • True Count • Dynamic Seats • Charts</p>
 </header>
 
 <section id="entry">
   <h2>Enter Cards</h2>
 
-  <!-- Your Hand -->
   <div class="row">
     <label>Your Card 1: <select id="p1"></select></label>
     <label>Your Card 2: <select id="p2"></select></label>
   </div>
 
-  <!-- Dynamic Player Seats -->
   <div id="playerSeats"></div>
 
-  <!-- Add / Remove Seats -->
   <div class="row">
     <button id="addSeat">➕ Add Player Seat</button>
     <button id="removeSeat">➖ Remove Seat</button>
   </div>
 
-  <!-- Dealer Upcard -->
   <div class="row">
     <label>Dealer Upcard: <select id="dealerUp"></select></label>
   </div>
 
-  <!-- Controls -->
   <div class="row">
     <button id="evaluate">Evaluate</button>
     <button id="nextHand">Next Hand</button>
     <button id="newShoe">New Shoe</button>
   </div>
-
 </section>
 
 <section id="strategyInline">
