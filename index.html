@@ -1,64 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Blackjack Trainer – Manual Dealing</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<title>Blackjack Counter Trainer</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <header>
-  <h1>Blackjack Trainer</h1>
-  <p>6 Deck Shoe • Dealer Hits Soft 17 • Manual Card Entry</p>
+  <h1>Blackjack Counter Trainer</h1>
+  <p>Manual Table Entry • 6 Deck Shoe • Live Hint Engine</p>
 </header>
 
-<section id="manualInput">
-  <h2>Enter Dealt Cards</h2>
-  <div class="row">
-    <label>Player Card 1
-      <select id="p1"></select>
-    </label>
-    <label>Player Card 2
-      <select id="p2"></select>
-    </label>
-    <label>Dealer Upcard
-      <select id="dealer"></select>
-    </label>
-    <button id="startHand">Start Hand</button>
-  </div>
+<section id="entry">
+
+<h2>Your Hand</h2>
+<div class="row">
+  <select id="p1"></select>
+  <select id="p2"></select>
+</div>
+
+<h2>Dealer Upcard</h2>
+<div class="row">
+  <select id="dealer"></select>
+</div>
+
+<h2>Other Players (cards already dealt)</h2>
+<p>Enter all visible cards from other players to update the count</p>
+<div class="row">
+  <input id="others" placeholder="Example: 10, A, 5, K, 3">
+</div>
+
+<button id="start">Evaluate Hand</button>
+
 </section>
 
 <section id="table">
-  <div class="area">
-    <h2>Dealer</h2>
-    <div id="dealerCards" class="cards"></div>
-  </div>
-
-  <div class="area">
-    <h2>Player</h2>
-    <div id="playerCards" class="cards"></div>
-  </div>
-
-  <div id="actions">
-    <button id="hitBtn">Hit</button>
-    <button id="standBtn">Stand</button>
-    <button id="doubleBtn">Double</button>
-    <button id="splitBtn">Split</button>
-  </div>
+  <h2>Table View</h2>
+  <p>Your Cards: <span id="yourCards"></span></p>
+  <p>Dealer Card: <span id="dealerCard"></span></p>
 </section>
 
-<section id="info">
-  <p>Player Total: <span id="playerTotal">0</span></p>
-  <p>Dealer Upcard: <span id="dealerUp">-</span></p>
-  <p>Running Count: <span id="runningCount">0</span></p>
-  <p>True Count: <span id="trueCount">0</span></p>
-  <p id="status"></p>
-</section>
-
-<section id="history">
-  <h2>Hand History</h2>
-  <ul id="historyList"></ul>
+<section id="stats">
+  <p>Running Count: <strong id="rc">0</strong></p>
+  <p>True Count: <strong id="tc">0</strong></p>
+  <p class="hint">Recommended Action: <span id="advice">—</span></p>
+  <p id="explain"></p>
 </section>
 
 <script src="app.js"></script>
