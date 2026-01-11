@@ -2,50 +2,69 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Blackjack Counter Trainer</title>
+<title>Blackjack Trainer with Backtesting</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <header>
-  <h1>Blackjack Counter Trainer</h1>
-  <p>Manual Table Entry • 6 Deck Shoe • Live Hint Engine</p>
+  <h1>Blackjack Trainer + Backtesting</h1>
+  <p>Manual Entry • 6 Deck Shoe • True Count Hints • History & Results</p>
 </header>
 
 <section id="entry">
+  <h2>Table Entry</h2>
 
-<h2>Your Hand</h2>
-<div class="row">
-  <select id="p1"></select>
-  <select id="p2"></select>
-</div>
+  <div class="row">
+    <label>Your Card 1:
+      <select id="p1"></select>
+    </label>
+    <label>Your Card 2:
+      <select id="p2"></select>
+    </label>
+    <label>Dealer Upcard:
+      <select id="dealer"></select>
+    </label>
+  </div>
 
-<h2>Dealer Upcard</h2>
-<div class="row">
-  <select id="dealer"></select>
-</div>
+  <h3>Visible Cards (others at table):</h3>
+  <input id="others" placeholder="Ex: 10, A, 5, K, 3">
 
-<h2>Other Players (cards already dealt)</h2>
-<p>Enter all visible cards from other players to update the count</p>
-<div class="row">
-  <input id="others" placeholder="Example: 10, A, 5, K, 3">
-</div>
-
-<button id="start">Evaluate Hand</button>
-
+  <div class="row">
+    <button id="evaluate">Evaluate Hand</button>
+    <button id="nextHand">Next Hand</button>
+    <button id="newShoe">New Shoe</button>
+  </div>
 </section>
 
-<section id="table">
-  <h2>Table View</h2>
-  <p>Your Cards: <span id="yourCards"></span></p>
-  <p>Dealer Card: <span id="dealerCard"></span></p>
+<section id="results">
+  <h2>Hand Info</h2>
+  <p>Your Hand: <span id="yourCards"></span></p>
+  <p>Dealer Upcard: <span id="dealerCard"></span></p>
+
+  <p>Running Count: <strong id="rc">0</strong></p>
+  <p>True Count: <strong id="tc">0</strong></p>
+
+  <p class="hint">Recommended Action: <span id="advice">—</span></p>
+  <p id="explain"></p>
+
+  <h3>Outcome</h3>
+  <p id="outcome">—</p>
+</section>
+
+<section id="history">
+  <h2>Session History</h2>
+  <ul id="historyList"></ul>
 </section>
 
 <section id="stats">
-  <p>Running Count: <strong id="rc">0</strong></p>
-  <p>True Count: <strong id="tc">0</strong></p>
-  <p class="hint">Recommended Action: <span id="advice">—</span></p>
-  <p id="explain"></p>
+  <h2>Backtest Stats</h2>
+  <p>Total Hands: <span id="statTotal">0</span></p>
+  <p>Wins: <span id="statWins">0</span></p>
+  <p>Losses: <span id="statLosses">0</span></p>
+  <p>Pushes: <span id="statPushes">0</span></p>
+  <p>Advice Correct: <span id="statCorrect">0</span></p>
 </section>
 
 <script src="app.js"></script>
