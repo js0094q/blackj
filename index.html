@@ -15,50 +15,48 @@
   <p>Manual Entry • True Count • Strategy Overlay</p>
 </header>
 
-<button id="showStrategyBtn">Show Basic Strategy Table</button>
-
-<!-- Strategy Overlay -->
-<div id="strategyOverlay" class="hidden">
-  <div id="strategyContent">
-    <button id="closeStrategyBtn">Close</button>
-    <h2>Basic Strategy Table</h2>
-    <div id="strategyTables"></div>
-  </div>
-</div>
-
 <section id="entry">
   <h2>Enter Cards</h2>
 
   <div class="row">
-    <label>Your Card 1:
-      <select id="p1"></select>
-    </label>
-
-    <label>Your Card 2:
-      <select id="p2"></select>
-    </label>
-
-    <label>Dealer Upcard:
-      <select id="dealerUp"></select>
-    </label>
-
-    <label>Dealer Hole Card:
-      <select id="dealerHole"></select>
-    </label>
+    <label>Your Card 1: <select id="p1"></select></label>
+    <label>Your Card 2: <select id="p2"></select></label>
   </div>
 
-  <input id="others" placeholder="Other visible cards: 10, K, 7">
+  <h3>Other Players (visible cards)</h3>
+  <div class="row">
+    <label>Player 2: <select id="p3"></select><select id="p4"></select></label>
+    <label>Player 3: <select id="p5"></select><select id="p6"></select></label>
+    <label>Player 4: <select id="p7"></select><select id="p8"></select></label>
+  </div>
+  <div class="row">
+    <label>Player 5: <select id="p9"></select><select id="p10"></select></label>
+    <label>Player 6: <select id="p11"></select><select id="p12"></select></label>
+    <label>Player 7: <select id="p13"></select><select id="p14"></select></label>
+  </div>
+
+  <div class="row">
+    <label>Dealer Upcard: <select id="dealerUp"></select></label>
+  </div>
 
   <div class="row">
     <button id="evaluate">Evaluate</button>
     <button id="nextHand">Next Hand</button>
     <button id="newShoe">New Shoe</button>
   </div>
+
+  <label>Book Lean:</label>
+  <input id="bookLean" placeholder="e.g. BetMGM EV +3.7%">
+</section>
+
+<section id="strategyInline">
+  <h2>Basic Strategy Table</h2>
+  <div id="strategyTables"></div>
 </section>
 
 <section id="results">
   <p>Your Cards: <span id="yourCards"></span></p>
-  <p>Dealer Cards: <span id="dealerCards"></span></p>
+  <p>Dealer Upcard: <span id="dealerCard"></span></p>
 
   <p>Running Count: <strong id="rc">0</strong></p>
   <p>True Count: <strong id="tc">0</strong></p>
@@ -67,6 +65,7 @@
   <p id="explanation"></p>
 
   <p>Outcome (click to enter): <span id="outcome">—</span></p>
+  <p>Book Lean Recorded: <span id="historyBookLean">—</span></p>
 </section>
 
 <section id="charts">
