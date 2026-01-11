@@ -13,7 +13,7 @@ header {
 }
 
 section {
-  max-width: 900px;
+  max-width: 1000px;
   margin: auto;
   padding: 15px;
 }
@@ -63,4 +63,10 @@ button:hover {
 
 .highlight {
   background: yellow;
+}
+
+.playerSeat {
+  padding-left: 5px;
+  border-left: 2px solid #ccc;
+  margin-bottom: 8px;
 }
