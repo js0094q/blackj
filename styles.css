@@ -1,109 +1,81 @@
-/* General Styles */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
-  padding: 0;
-  background: #fafafa;
-  color: #333;
+  background: #f4f4f4;
+  color: #222;
 }
 
 header {
   background: #2a2a72;
-  color: #fff;
+  color: white;
   padding: 15px;
   text-align: center;
 }
 
-footer {
-  text-align: center;
-  padding: 12px;
-  font-size: 0.9em;
-  background: #eee;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-}
-
-/* Dashboard Layout */
-section#dashboard {
-  padding: 20px;
+section {
+  padding: 15px;
   max-width: 900px;
   margin: auto;
 }
 
-/* Card Selector Section */
-.card‑selector {
+#manualInput .row {
   display: flex;
+  gap: 10px;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 15px 0;
-  align-items: center;
+  justify-content: center;
 }
 
-.cardBtn {
-  padding: 10px 12px;
-  border: 1px solid #888;
-  border-radius: 4px;
-  cursor: pointer;
-  background: #fff;
-  font-weight: bold;
-  min-width: 40px;
-  text-align: center;
-  flex: 0 0 auto;
-  transition: background 0.2s;
-}
-
-.cardBtn:hover {
-  background: #ddeeff;
-}
-
-/* Player & Dealer Hand Input */
-.playerDealerSelect {
-  margin: 15px 0;
-}
-
-.playerDealerSelect label {
-  margin-right: 15px;
-  font-weight: bold;
-}
-
-.playerDealerSelect select {
-  padding: 4px;
-  margin-left: 4px;
-}
-
-/* Game Stats */
-.status p,
-.hints p {
-  font-size: 1.1em;
-  margin: 6px 0;
-}
-
-/* Buttons */
-.controls button {
-  margin: 10px 5px;
-  padding: 8px 16px;
+#manualInput select,
+#manualInput button {
+  padding: 6px 10px;
   font-size: 1em;
-  cursor: pointer;
-  border: none;
-  background: #2a72b2;
-  color: #fff;
+}
+
+#table {
+  text-align: center;
+}
+
+.area {
+  margin-bottom: 10px;
+}
+
+.cards {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.card {
+  border: 1px solid #333;
+  background: white;
+  padding: 8px 12px;
   border-radius: 4px;
-  transition: background 0.2s;
+  font-size: 1.1em;
 }
 
-.controls button:hover {
-  background-color: #245a90;
-}
-
-/* Hint History */
-#historyList ul {
-  list-style: none;
-  padding-left: 0;
+#actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
   margin-top: 10px;
 }
 
-#historyList li {
-  margin: 4px 0;
-  font-size: 0.95em;
+#actions button {
+  padding: 8px 14px;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+#info {
+  text-align: center;
+  font-size: 1.1em;
+}
+
+#history ul {
+  list-style: none;
+  padding: 0;
+}
+
+#history li {
+  padding: 4px 0;
+  font-size: 0.9em;
 }
