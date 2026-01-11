@@ -2,59 +2,65 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blackjack Card Counting Trainer</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Blackjack Trainer – Manual Dealing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>Blackjack Card Counting Trainer</h1>
-    <p>6‑Deck Shoe • Dealer Stands on Soft 17 • Surrender OK</p>
-  </header>
 
-  <section id="dashboard">
-    <div class="card‑selector">
-      <h2>Select Cards Seen</h2>
-      <div id="cardsContainer"></div>
-    </div>
+<header>
+  <h1>Blackjack Trainer</h1>
+  <p>6 Deck Shoe • Dealer Hits Soft 17 • Manual Card Entry</p>
+</header>
 
-    <div class="playerDealerSelect">
-      <h3>Enter Current Hand</h3>
-      <label>Player Card 1:
-        <select id="playerCard1"></select>
-      </label>
-      <label>Player Card 2:
-        <select id="playerCard2"></select>
-      </label>
-      <label>Dealer Upcard:
-        <select id="dealerUpCard"></select>
-      </label>
-      <button onclick="generateHint()">Get Hint</button>
-    </div>
+<section id="manualInput">
+  <h2>Enter Dealt Cards</h2>
+  <div class="row">
+    <label>Player Card 1
+      <select id="p1"></select>
+    </label>
+    <label>Player Card 2
+      <select id="p2"></select>
+    </label>
+    <label>Dealer Upcard
+      <select id="dealer"></select>
+    </label>
+    <button id="startHand">Start Hand</button>
+  </div>
+</section>
 
-    <div class="status">
-      <p>Running Count: <span id="runningCount">0</span></p>
-      <p>True Count: <span id="trueCount">0.0</span></p>
-      <p>Remaining Cards: <span id="remainingCards">312</span></p>
-      <p>Outcomes (Sim): <span id="oddsDisplay">N/A</span></p>
-    </div>
+<section id="table">
+  <div class="area">
+    <h2>Dealer</h2>
+    <div id="dealerCards" class="cards"></div>
+  </div>
 
-    <div class="controls">
-      <button id="simulateBtn">Simulate Odds</button>
-      <button id="resetBtn">Reset</button>
-    </div>
+  <div class="area">
+    <h2>Player</h2>
+    <div id="playerCards" class="cards"></div>
+  </div>
 
-    <div class="hints">
-      <h3>Hints & Tips</h3>
-      <p id="hintText">Select cards to begin.</p>
-      <div id="historyList"></div>
-    </div>
-  </section>
+  <div id="actions">
+    <button id="hitBtn">Hit</button>
+    <button id="standBtn">Stand</button>
+    <button id="doubleBtn">Double</button>
+    <button id="splitBtn">Split</button>
+  </div>
+</section>
 
-  <footer>
-    <p>Designed for beginners to improve counting & decision making.</p>
-  </footer>
+<section id="info">
+  <p>Player Total: <span id="playerTotal">0</span></p>
+  <p>Dealer Upcard: <span id="dealerUp">-</span></p>
+  <p>Running Count: <span id="runningCount">0</span></p>
+  <p>True Count: <span id="trueCount">0</span></p>
+  <p id="status"></p>
+</section>
 
-  <script src="app.js"></script>
+<section id="history">
+  <h2>Hand History</h2>
+  <ul id="historyList"></ul>
+</section>
+
+<script src="app.js"></script>
 </body>
 </html>
