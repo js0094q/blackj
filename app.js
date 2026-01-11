@@ -11,9 +11,6 @@ let historyArr = JSON.parse(localStorage.getItem("bjHistory")) || [];
 let winRateChart = null;
 let trueCountChart = null;
 
-/*************************
- SETUP
-*************************/
 window.onload = () => {
   populateSelects();
   renderHistory();
@@ -21,7 +18,7 @@ window.onload = () => {
 };
 
 /*************************
- DROP DOWNS
+ POPULATE DROPDOWNS
 *************************/
 function populateSelects() {
   const ids = ["p1","p2","dealerUp"];
@@ -40,26 +37,22 @@ function populateSelects() {
 }
 
 /*************************
- SEAT MANAGEMENT
+ DYNAMIC SEATS
 *************************/
 let currentSeats = 0;
 let nextId = 3;
 
 document.getElementById("addSeat").onclick = () => {
-  if (currentSeats >= 6) return alert("Max seats reached");
-
+  if (currentSeats >= 6) return alert("Max 7 players (including you)");
   const seatDiv = document.createElement("div");
   seatDiv.className = "row playerSeat";
   seatDiv.id = `seat${currentSeats+1}`;
-
   const c1 = `p${nextId++}`;
   const c2 = `p${nextId++}`;
-
   seatDiv.innerHTML = `
     <label>Player ${currentSeats+2} Card 1: <select id="${c1}"></select></label>
     <label>Card 2: <select id="${c2}"></select></label>
   `;
-
   document.getElementById("playerSeats").appendChild(seatDiv);
   populateSelects();
   currentSeats++;
@@ -67,8 +60,7 @@ document.getElementById("addSeat").onclick = () => {
 
 document.getElementById("removeSeat").onclick = () => {
   if (currentSeats === 0) return;
-  const div = document.getElementById(`seat${currentSeats}`);
-  div.remove();
+  document.getElementById(`seat${currentSeats}`).remove();
   nextId -= 2;
   currentSeats--;
 };
@@ -78,19 +70,18 @@ document.getElementById("removeSeat").onclick = () => {
 *************************/
 function cardValue(c) {
   if (["J","Q","K"].includes(c)) return 10;
-  if (c==="A") return 11;
+  if (c === "A") return 11;
   return parseInt(c);
 }
 
 function handValue(hand) {
-  let total = 0;
-  let aces = 0;
+  let total = 0, aces = 0;
   hand.forEach(c => {
     if (["J","Q","K","10"].includes(c)) total += 10;
-    else if (c==="A") { total += 11; aces++; }
+    else if (c === "A") { total += 11; aces++; }
     else total += parseInt(c);
   });
-  while (total>21 && aces) { total-=10; aces--; }
+  while (total > 21 && aces) { total -= 10; aces--; }
   return total;
 }
 
@@ -99,39 +90,39 @@ function trueCount() {
 }
 
 /*************************
- BASIC STRATEGY + DEVIATION
+ BASIC STRATEGY
 *************************/
-function basicStrategy(player, dealerUp) {
+function basicStrategy(player, up) {
   const total = handValue(player);
-  const up = cardValue(dealerUp);
-  const isPair = player[0]===player[1];
-  const isSoft = player.includes("A") && total<=21 && !["10","J","Q","K"].includes(player[0]);
+  const dealerUp = cardValue(up);
+  const isPair = player[0] === player[1];
+  const isSoft = player.includes("A") && total <= 21 && !["10","J","Q","K"].includes(player[0]);
 
   if (isPair) {
-    if (player[0]==="A" || player[0]==="8") return "Split";
+    if (player[0] === "A" || player[0] === "8") return "Split";
     if (["10","J","Q","K"].includes(player[0])) return "Stand";
   }
   if (isSoft) {
-    if (total>=19) return "Stand";
-    if (total===18) {
-      if (up>=3&&up<=6) return "Double";
-      if (up>=9) return "Hit";
+    if (total >= 19) return "Stand";
+    if (total === 18) {
+      if (dealerUp >= 3 && dealerUp <= 6) return "Double";
+      if (dealerUp >= 9) return "Hit";
       return "Stand";
     }
     return "Hit";
   }
-  if (total>=17) return "Stand";
-  if (total>=13 && up<=6) return "Stand";
-  if (total===12 && up>=4 && up<=6) return "Stand";
-  if (total===11) return "Double";
-  if (total===10 && up<=9) return "Double";
-  if (total===9 && up>=3&&up<=6) return "Double";
+  if (total >= 17) return "Stand";
+  if (total >= 13 && dealerUp <= 6) return "Stand";
+  if (total === 12 && dealerUp >= 4 && dealerUp <= 6) return "Stand";
+  if (total === 11) return "Double";
+  if (total === 10 && dealerUp <= 9) return "Double";
+  if (total === 9 && dealerUp >= 3 && dealerUp <= 6) return "Double";
   return "Hit";
 }
 
 function applyDeviation(advice, tc) {
-  if (advice==="Stand" && tc>=3) return "Stand (High Count)";
-  if (advice==="Hit" && tc<=-1) return "Hit (Low Count)";
+  if (advice === "Stand" && tc >= 3) return "Stand (High Count)";
+  if (advice === "Hit" && tc <= -1) return "Hit (Low Count)";
   return advice;
 }
 
@@ -152,27 +143,29 @@ const basicTable = {
     8:  {2:"H",3:"H",4:"H",5:"H",6:"H",7:"H",8:"H",9:"H",10:"H",A:"H"}
   },
   soft: {
-    20:{2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    19:{2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    18:{2:"S",3:"D",4:"D",5:"D",6:"D",7:"S",8:"S",9:"H",10:"H",A:"H"},
-    17:{2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    16:{2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    15:{2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    14:{2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    13:{2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"}
+    20: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    19: {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    18: {2:"S",3:"D",4:"D",5:"D",6:"D",7:"S",8:"S",9:"H",10:"H",A:"H"},
+    17: {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    16: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    15: {2:"H",3:"H",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    14: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    13: {2:"H",3:"H",4:"H",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
   },
   pairs: {
-    "A": {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
-    "10":{2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    "9": {2:"P",3:"P",4:"P",5:"P",6:"P",7:"S",8:"P",9:"P",10:"S",A:"S"},
-    "8": {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
-    "7": {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
-    "6": {2:"P",3:"P",4:"P",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    "5": {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
-    "4": {2:"H",3:"H",4:"H",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    "3": {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
-    "2": {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"}
+    "A":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
+    "10": {2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
+    "9":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"S",8:"P",9:"P",10:"S",A:"S"},
+    "8":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"P",9:"P",10:"P",A:"P"},
+    "7":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
+    "6":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    "5":  {2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
+    "4":  {2:"H",3:"H",4:"H",5:"P",6:"P",7:"H",8:"H",9:"H",10:"H",A:"H"},
+    "3":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"},
+    "2":  {2:"P",3:"P",4:"P",5:"P",6:"P",7:"P",8:"H",9:"H",10:"H",A:"H"}
   }
 };
 
-// … remains unchanged (buildStrategyTables, highlightStrategy, evaluate, record result, history, charts, nextHand, newShoe)
+// buildStrategyTables, highlightStrategy, etc (unchanged from prior)
+
+// EVALUATE handler, HISTORY, CHARTS, NEXT HAND, NEW SHOE (also unchanged)
