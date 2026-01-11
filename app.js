@@ -1,169 +1,38 @@
+/*********************
+  GAME STATE
+*********************/
+const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
+const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
+
 let runningCount = 0;
-let cardCounted = [];
-let remainingCards = 312;
+let deckSize = 312; // 6 decks
 
-const hiLoMap = {
-  2: 1, 3: 1, 4: 1, 5: 1, 6: 1,
-  7: 0, 8: 0, 9: 0,
-  10: -1, J: -1, Q: -1, K: -1, A: -1
-};
+let playerHand = [];
+let dealerHand = [];
+let hasSplit = false;
 
-const cards = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
-
-// Build Card Buttons
-const container = document.getElementById("cardsContainer");
-cards.forEach(c => {
-  let btn = document.createElement("button");
-  btn.className = "cardBtn";
-  btn.innerText = c;
-  btn.onclick = () => onCardClick(c);
-  container.appendChild(btn);
-});
-
-// Populate select dropdowns
-["playerCard1", "playerCard2", "dealerUpCard"].forEach(id => {
-  const sel = document.getElementById(id);
-  cards.forEach(card => {
-    const opt = document.createElement("option");
-    opt.value = card;
-    opt.innerText = card;
-    sel.appendChild(opt);
+/*********************
+  SETUP DROPDOWNS
+*********************/
+function populateSelects() {
+  ["p1","p2","dealer"].forEach(id => {
+    const sel = document.getElementById(id);
+    RANKS.forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r;
+      opt.textContent = r;
+      sel.appendChild(opt);
+    });
   });
-});
-
-function onCardClick(card) {
-  cardCounted.push(card);
-  runningCount += hiLoMap[card] || 0;
-  remainingCards--;
-  updateDisplay();
 }
 
-function updateDisplay() {
-  document.getElementById("runningCount").innerText = runningCount;
-  let decksLeft = Math.max(1, (remainingCards / 52));
-  let trueCount = (runningCount / decksLeft).toFixed(2);
-  document.getElementById("trueCount").innerText = trueCount;
-  document.getElementById("remainingCards").innerText = remainingCards;
-}
-
-// Hint logic with split & double down
-function generateHint() {
-  const card1 = document.getElementById("playerCard1").value;
-  const card2 = document.getElementById("playerCard2").value;
-  const dealer = document.getElementById("dealerUpCard").value;
-  let hint = "";
-
-  const isPair = (card1 === card2);
-  const total = handValue([card1, card2]);
-  const dealerVal = cardValue(dealer);
-  const tc = parseFloat(document.getElementById("trueCount").innerText);
-
-  if (isPair) {
-    if (["A", "8"].includes(card1)) hint += "Always split Aces and 8s. ";
-    else if (["10", "J", "Q", "K"].includes(card1)) hint += "Never split 10s. ";
-    else if (["2", "3", "7"].includes(card1) && dealerVal <= 7) hint += "Split against weak dealer. ";
-  }
-
-  if ([9, 10, 11].includes(total) && dealerVal <= 6) {
-    hint += "Consider Double Down. ";
-  }
-
-  if (total >= 17) hint += "Stand.";
-  else if (total <= 11) hint += "Hit.";
-  else if (dealerVal >= 7) hint += "Hit.";
-  else hint += "Stand.";
-
-  if (tc > 2) hint += " Count is high — more face cards expected.";
-  if (tc < -1) hint += " Count is low — fewer face cards.";
-
-  document.getElementById("hintText").innerText = hint;
-
-  // Save to history
-  let history = JSON.parse(localStorage.getItem("hintHistory") || "[]");
-  history.push({ card1, card2, dealer, hint, timestamp: new Date().toISOString() });
-  localStorage.setItem("hintHistory", JSON.stringify(history));
-  renderHistory();
-}
-
-function cardValue(card) {
-  if (["J", "Q", "K"].includes(card)) return 10;
-  if (card === "A") return 11;
-  return parseInt(card);
-}
-
-function renderHistory() {
-  const history = JSON.parse(localStorage.getItem("hintHistory") || "[]");
-  let html = "<h3>Hint History</h3><ul>";
-  history.slice(-5).reverse().forEach(h => {
-    html += `<li>${h.timestamp.split("T")[0]} – Player: ${h.card1},${h.card2} vs Dealer: ${h.dealer} ➜ ${h.hint}</li>`;
-  });
-  html += "</ul>";
-  document.getElementById("historyList").innerHTML = html;
-}
-
-// Simulate
-function simulateOdds() {
-  const iterations = 5000;
-  let wins = 0, losses = 0, pushes = 0;
-
-  for (let i = 0; i < iterations; i++) {
-    const result = simulateHand();
-    if (result === "win") wins++;
-    else if (result === "loss") losses++;
-    else pushes++;
-  }
-
-  document.getElementById("oddsDisplay").innerText =
-    `W: ${(wins / iterations * 100).toFixed(1)}% | L: ${(losses / iterations * 100).toFixed(1)}% | P: ${(pushes / iterations * 100).toFixed(1)}%`;
-}
-
-function simulateHand() {
-  let deck = buildDeck();
-  shuffle(deck);
-
-  let player = [drawCard(deck), drawCard(deck)];
-  let dealer = [drawCard(deck), drawCard(deck)];
-
-  let total = handValue(player);
-  while (total < 17) {
-    player.push(drawCard(deck));
-    total = handValue(player);
-    if (total > 21) return "loss";
-  }
-
-  let dealerTotal = handValue(dealer);
-  while (dealerTotal < 17) {
-    dealer.push(drawCard(deck));
-    dealerTotal = handValue(dealer);
-  }
-
-  if (total > 21) return "loss";
-  if (dealerTotal > 21 || total > dealerTotal) return "win";
-  if (total === dealerTotal) return "push";
-  return "loss";
-}
-
-function buildDeck() {
-  let d = [];
-  for (let i = 0; i < 6 * 4; i++) cards.forEach(c => d.push(c));
-  return d;
-}
-
-function shuffle(a) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-}
-
-function drawCard(deck) {
-  return deck.pop();
-}
-
+/*********************
+  UTILS
+*********************/
 function handValue(hand) {
   let total = 0, aces = 0;
   hand.forEach(c => {
-    if (["J", "Q", "K", "10"].includes(c)) total += 10;
+    if (["J","Q","K","10"].includes(c)) total += 10;
     else if (c === "A") { total += 11; aces++; }
     else total += parseInt(c);
   });
@@ -174,14 +43,153 @@ function handValue(hand) {
   return total;
 }
 
-// Buttons
-document.getElementById("simulateBtn").onclick = simulateOdds;
-document.getElementById("resetBtn").onclick = () => {
-  runningCount = 0;
-  remainingCards = 312;
-  cardCounted = [];
-  updateDisplay();
-  document.getElementById("oddsDisplay").innerText = "N/A";
-  document.getElementById("hintText").innerText = "Select cards to begin.";
+function renderCards(id, hand) {
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+  hand.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.textContent = c;
+    el.appendChild(div);
+  });
+}
+
+function updateCount(card) {
+  runningCount += hiLo[card];
+  deckSize--;
+}
+
+/*********************
+  START HAND (MANUAL)
+*********************/
+document.getElementById("startHand").onclick = () => {
+  const c1 = document.getElementById("p1").value;
+  const c2 = document.getElementById("p2").value;
+  const dealer = document.getElementById("dealer").value;
+
+  playerHand = [c1, c2];
+  dealerHand = [dealer];
+  hasSplit = false;
+
+  updateCount(c1);
+  updateCount(c2);
+  updateCount(dealer);
+
+  updateUI();
+  document.getElementById("status").textContent = "Hand Started.";
 };
-window.onload = renderHistory;
+
+/*********************
+  ACTION BUTTONS
+*********************/
+document.getElementById("hitBtn").onclick = () => {
+  const card = prompt("Enter next card dealt to Player:");
+  if (!RANKS.includes(card)) return alert("Invalid card");
+  playerHand.push(card);
+  updateCount(card);
+  step();
+};
+
+document.getElementById("standBtn").onclick = () => finishHand();
+
+document.getElementById("doubleBtn").onclick = () => {
+  const card = prompt("Enter card for Double:");
+  if (!RANKS.includes(card)) return alert("Invalid card");
+  playerHand.push(card);
+  updateCount(card);
+  finishHand();
+};
+
+document.getElementById("splitBtn").onclick = () => {
+  if (hasSplit) return alert("Only one split allowed.");
+  if (playerHand[0] !== playerHand[1]) return alert("Not a pair.");
+
+  hasSplit = true;
+  alert("Split acknowledged. Play each hand manually (future upgrade).");
+};
+
+/*********************
+  HAND FLOW
+*********************/
+function step() {
+  updateUI();
+  if (handValue(playerHand) > 21) {
+    document.getElementById("status").textContent = "Player Busts.";
+    saveHistory("BUST");
+  }
+}
+
+function finishHand() {
+  const dealerDown = prompt("Enter Dealer's Hole Card:");
+  if (!RANKS.includes(dealerDown)) return alert("Invalid card");
+
+  dealerHand.push(dealerDown);
+  updateCount(dealerDown);
+
+  while (handValue(dealerHand) < 17) {
+    const next = prompt("Enter Dealer Draw Card:");
+    if (!RANKS.includes(next)) return alert("Invalid card");
+    dealerHand.push(next);
+    updateCount(next);
+  }
+
+  const p = handValue(playerHand);
+  const d = handValue(dealerHand);
+
+  let result = "";
+  if (p > 21) result = "LOSE";
+  else if (d > 21 || p > d) result = "WIN";
+  else if (p === d) result = "PUSH";
+  else result = "LOSE";
+
+  document.getElementById("status").textContent = `Result: ${result}`;
+  saveHistory(result);
+  updateUI();
+}
+
+/*********************
+  UI UPDATE
+*********************/
+function updateUI() {
+  renderCards("playerCards", playerHand);
+  renderCards("dealerCards", dealerHand);
+
+  document.getElementById("playerTotal").textContent = handValue(playerHand);
+  document.getElementById("dealerUp").textContent = dealerHand[0] || "-";
+  document.getElementById("runningCount").textContent = runningCount;
+  document.getElementById("trueCount").textContent =
+    (runningCount / (deckSize / 52)).toFixed(2);
+}
+
+/*********************
+  HISTORY
+*********************/
+function saveHistory(result) {
+  const history = JSON.parse(localStorage.getItem("bjHistory") || "[]");
+  history.push({
+    time: new Date().toLocaleTimeString(),
+    result,
+    count: runningCount
+  });
+  localStorage.setItem("bjHistory", JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem("bjHistory") || "[]");
+  const ul = document.getElementById("historyList");
+  ul.innerHTML = "";
+  history.slice(-10).reverse().forEach(h => {
+    const li = document.createElement("li");
+    li.textContent = `${h.time} – ${h.result} (Count: ${h.count})`;
+    ul.appendChild(li);
+  });
+}
+
+/*********************
+  INIT
+*********************/
+window.onload = () => {
+  populateSelects();
+  renderHistory();
+};
