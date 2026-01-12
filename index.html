@@ -1,57 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Blackjack Trainer Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="styles.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <meta charset="UTF-8">
+  <title>Blackjack Trainer Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
+    h1 { color: #1a237e; }
+    button { margin: 0.2rem; padding: 0.5rem 1rem; font-size: 1rem; }
+    .section { margin-top: 2rem; padding: 1rem; background: white; border-radius: 5px; }
+    canvas { max-width: 100%; margin-top: 1rem; }
+    .ev-table td { padding: 0.5rem; }
+    .ev-table td:first-child { font-weight: bold; }
+  </style>
 </head>
 <body>
 
-<header>
   <h1>Blackjack Trainer Pro</h1>
-  <p>Tap Cards • Strategy • Odds • EV • Flexible Seats</p>
-</header>
 
-<section id="controls">
-  <button id="addSeat">➕ Add Player</button>
-  <button id="removeSeat">➖ Remove Player</button>
-</section>
+  <div class="section">
+    <h2>Tap Cards</h2>
+    <div id="cardButtons"></div>
+    <p>Dealer Upcard: <span id="dealerCard">—</span></p>
+    <div id="seats"></div>
 
-<section id="cardEntry">
-  <h2>Tap Cards</h2>
-  <div id="cardButtons" class="cardButtons"></div>
-
-  <div id="seats" class="seatContainer"></div>
-  <p><strong>Dealer Upcard:</strong> <span id="dealerCard">—</span></p>
-
-  <div class="actions">
     <button id="undo">Undo</button>
-    <button id="resetHand">Reset Hand</button>
-    <button id="clearTable">Clear Table</button>
-    <button id="newShoe">New Shoe</button>
+    <button id="addSeat">Add Player</button>
+    <button id="removeSeat">Remove Player</button>
     <button id="evaluate">Evaluate</button>
   </div>
-</section>
 
-<section id="results">
-  <h2>Results</h2>
-  <p><strong>Running Count:</strong> <span id="runningCount">0</span></p>
-  <p><strong>True Count:</strong> <span id="trueCount">0</span></p>
-  <p><strong>Recommended Move (You):</strong> <span id="strategy">—</span></p>
-  <p><strong>Odds:</strong> Win: <span id="winPct">—</span>% | Push: <span id="pushPct">—</span>% | Loss: <span id="lossPct">—</span>%</p>
-  <p><strong>EV:</strong> <span id="evDisplay">—</span></p>
-  <p><strong>Side Bets:</strong> <span id="sideBetResults">—</span></p>
-</section>
+  <div class="section">
+    <h2>EV Comparison</h2>
+    <table class="ev-table">
+      <tr><td>Stand</td><td id="evStand">—</td></tr>
+      <tr><td>Hit</td><td id="evHit">—</td></tr>
+      <tr><td>Double</td><td id="evDouble">—</td></tr>
+      <tr><td>Split</td><td id="evSplit">—</td></tr>
+      <tr><td>Surrender</td><td id="evSurrender">—</td></tr>
+    </table>
 
-<section id="historySection">
-  <h2>History</h2>
-  <ul id="historyList"></ul>
-</section>
+    <canvas id="evChart" width="600" height="300"></canvas>
+  </div>
 
-<script src="app.js"></script>
+  <div class="section">
+    <h2>Heatmap: EV vs Dealer Upcards</h2>
+    <canvas id="heatmap" width="780" height="50"></canvas>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
