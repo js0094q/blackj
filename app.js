@@ -12,7 +12,7 @@ let winRateChart = null;
 let trueCountChart = null;
 
 /*************************
- SETUP
+ INIT
 *************************/
 window.onload = () => {
   populateSelects();
@@ -40,241 +40,146 @@ function populateSelects() {
 }
 
 /*************************
- DYNAMIC SEATS
+ SHOE BUILDER
 *************************/
-let currentSeats = 0;
-let nextId = 3;
-
-document.getElementById("addSeat").onclick = () => {
-  if (currentSeats >= 6) return alert("Max 7 players (including you)");
-  const seatDiv = document.createElement("div");
-  seatDiv.className = "row playerSeat";
-  seatDiv.id = `seat${currentSeats+1}`;
-
-  const c1 = `p${nextId++}`;
-  const c2 = `p${nextId++}`;
-
-  seatDiv.innerHTML = `
-    <label>Player ${currentSeats+2} Card 1: <select id="${c1}"></select></label>
-    <label>Card 2: <select id="${c2}"></select></label>
-  `;
-  document.getElementById("playerSeats").appendChild(seatDiv);
-  populateSelects();
-  currentSeats++;
-};
-
-document.getElementById("removeSeat").onclick = () => {
-  if (currentSeats === 0) return;
-  document.getElementById(`seat${currentSeats}`).remove();
-  nextId -= 2;
-  currentSeats--;
-};
-
-/*************************
- COUNT UTILS
-*************************/
-function cardValue(c) {
-  if (["J","Q","K"].includes(c)) return 10;
-  if (c === "A") return 11;
-  return parseInt(c);
+function buildShoe(visible) {
+  // 6 decks
+  const shoe = [];
+  const suits = ["H","D","C","S"]; // suit is irrelevant for value, but counts
+  for (let d = 0; d < 6; d++) {
+    RANKS.forEach(r => {
+      suits.forEach(s => shoe.push(r));
+    });
+  }
+  // remove visible cards
+  visible.forEach(vc => {
+    const idx = shoe.indexOf(vc);
+    if (idx !== -1) shoe.splice(idx, 1);
+  });
+  return shoe;
 }
 
+/*************************
+ DEALER PLAY (RULES)
+*************************/
 function handValue(hand) {
   let total = 0, aces = 0;
   hand.forEach(c => {
     if (["J","Q","K","10"].includes(c)) total += 10;
-    else if (c==="A") { total += 11; aces++; }
+    else if (c === "A") { total += 11; aces++; }
     else total += parseInt(c);
   });
-  while (total > 21 && aces) { total -= 10; aces--; }
+  while (total > 21 && aces) {
+    total -= 10;
+    aces--;
+  }
   return total;
 }
 
-function trueCount() {
-  return (runningCount / (remainingCards / 52)).toFixed(2);
+function isSoft(hand) {
+  return hand.includes("A") && handValue(hand) <= 21;
 }
 
-/*************************
- BASIC STRATEGY
-*************************/
-function basicStrategy(player, dealerUp) {
-  const total=handValue(player);
-  const up=cardValue(dealerUp);
-  const isPair = player[0]===player[1];
-  const isSoft = player.includes("A") && total<=21 && !["10","J","Q","K"].includes(player[0]);
+function simulateDealerPlay(upcard, hole, shoe) {
+  const hand = [upcard, hole];
+  let total = handValue(hand);
+  const deck = shoe.slice();
 
-  if (isPair) {
-    if (player[0]==="A"||player[0]==="8") return "Split";
-    if (["10","J","Q","K"].includes(player[0])) return "Stand";
+  while (total < 17 || (total === 17 && isSoft(hand))) {
+    if (deck.length === 0) break;
+    const idx = Math.floor(Math.random() * deck.length);
+    const draw = deck.splice(idx, 1)[0];
+    hand.push(draw);
+    total = handValue(hand);
   }
+  return total;
+}
 
-  if (isSoft) {
-    if (total>=19) return "Stand";
-    if (total===18) {
-      if (up>=3&&up<=6) return "Double";
-      if (up>=9) return "Hit";
-      return "Stand";
-    }
-    return "Hit";
+/*************************
+ MONTE CARLO SIMULATION
+*************************/
+function monteCarloDealer(yourHand, dealerUp, visible, trials = 10000) {
+  const shoeTemplate = buildShoe(visible);
+  const results = { win: 0, push: 0, loss: 0 };
+
+  for (let t = 0; t < trials; t++) {
+    const shoe = shoeTemplate.slice();
+    const holeIdx = Math.floor(Math.random() * shoe.length);
+    const hole = shoe.splice(holeIdx, 1)[0];
+    const dealerFinal = simulateDealerPlay(dealerUp, hole, shoe);
+
+    const playerVal = handValue(yourHand);
+
+    if (playerVal > 21) results.loss++;
+    else if (dealerFinal > 21) results.win++;
+    else if (playerVal > dealerFinal) results.win++;
+    else if (playerVal < dealerFinal) results.loss++;
+    else results.push++;
   }
-  if (total>=17) return "Stand";
-  if (total>=13&&up<=6) return "Stand";
-  if (total===12&&up>=4&&up<=6) return "Stand";
-  if (total===11) return "Double";
-  if (total===10&&up<=9) return "Double";
-  if (total===9&&up>=3&&up<=6) return "Double";
-  return "Hit";
+  return results;
 }
 
-function applyDeviation(advice, tc) {
-  if (advice==="Stand" && tc>=3) return "Stand (High Count)";
-  if (advice==="Hit" && tc<=-1) return "Hit (Low Count)";
-  return advice;
-}
-
-/*************************
- BASIC STRATEGY TABLE
-*************************/
-const basicTable = {
-  hard: {
-    17:{2:"S",3:"S",4:"S",5:"S",6:"S",7:"S",8:"S",9:"S",10:"S",A:"S"},
-    16:{2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    15:{2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    14:{2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    13:{2:"S",3:"S",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    12:{2:"H",3:"H",4:"S",5:"S",6:"S",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    11:{2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
-    10:{2:"D",3:"D",4:"D",5:"D",6:"D",7:"D",8:"D",9:"D",10:"H",A:"H"},
-    9: {2:"H",3:"D",4:"D",5:"D",6:"D",7:"H",8:"H",9:"H",10:"H",A:"H"},
-    8: {2:"H",3:"H",4:"H",5:"H",6:"H",7:"H",8:"H",9:"H",10:"H",A:"H"}
-  },
-  soft:{ /* same structure */ },
-  pairs:{ /* same structure */ }
-};
-
-/*************************
- BUILD & HIGHLIGHT STRATEGY TABLE
-*************************/
-function buildStrategyTables() {
-  const container = document.getElementById("strategyTables");
-  container.innerHTML="";
-  ["hard","soft","pairs"].forEach(type=>{
-    const t=document.createElement("table");
-    t.className="basicTable";
-    let header=`<tr><th>${type.toUpperCase()}</th>`;
-    RANKS.forEach(d=>header+=`<th>${d}</th>`);
-    header+="</tr>";
-    t.innerHTML=header;
-    Object.keys(basicTable[type]).forEach(rk=>{
-      let row=`<tr data-type="${type}" data-key="${rk}"><td>${rk}</td>`;
-      RANKS.forEach(d=>{ const val=basicTable[type][rk][d]||"-"; row+=`<td data-dealertype="${type}" data-row="${rk}" data-dealer="${d}">${val}</td>` });
-      row+="</tr>";
-      t.innerHTML+=row;
-    });
-    container.appendChild(t);
-  });
-}
-
-function highlightStrategy(player,dealerUp) {
-  document.querySelectorAll(".highlight").forEach(el=>el.classList.remove("highlight"));
-  const total=handValue(player);
-  const up=dealerUp;
-  const isPair=player[0]===player[1];
-  const isSoft=player.includes("A") && total<=21 && !["10","J","Q","K"].includes(player[0]);
-  let type,key;
-  if(isPair){ type="pairs"; key=player[0]; }
-  else if(isSoft){ type="soft"; key=total.toString(); }
-  else{ type="hard"; key=(total<8?"8":total.toString()); }
-  document.querySelectorAll(`td[data-dealertype="${type}"][data-row="${key}"][data-dealer="${up}"]`)
-    .forEach(cell=>cell.classList.add("highlight"));
+function confidenceInterval(p, n, z = 1.96) {
+  const se = Math.sqrt((p*(1-p))/n);
+  return z * se;
 }
 
 /*************************
  EVALUATE HAND
 *************************/
-document.getElementById("evaluate").onclick = ()=>{
-  const selCards=[];
-  for(let i=1;i<=14;i++){
-    const el=document.getElementById(`p${i}`);
-    if(el && el.value) selCards.push(el.value);
-  }
-  const up=document.getElementById("dealerUp").value;
-  selCards.push(up);
+document.getElementById("evaluate").onclick = () => {
+  const p1 = document.getElementById("p1").value;
+  const p2 = document.getElementById("p2").value;
+  const up = document.getElementById("dealerUp").value;
 
-  runningCount=0; remainingCards=312;
-  selCards.forEach(c=>{ runningCount+=hiLo[c]||0; remainingCards-- });
+  const otherText = document.getElementById("others")?.value.trim() || "";
+  const others = otherText ? otherText.split(",").map(x => x.trim()) : [];
 
-  const yourHand=[document.getElementById("p1").value,document.getElementById("p2").value];
+  const visibleCards = [p1, p2, up, ...others];
 
-  document.getElementById("yourCards").textContent=`${yourHand.join(", ")}`;
-  document.getElementById("dealerCard").textContent=up;
+  runningCount = 0; remainingCards = 312;
+  visibleCards.forEach(c => { runningCount += hiLo[c] || 0; remainingCards--; });
 
-  const base=basicStrategy(yourHand,up);
-  const tc=parseFloat(trueCount());
-  const adv=applyDeviation(base,tc);
+  document.getElementById("yourCards").textContent = `${p1}, ${p2}`;
+  document.getElementById("dealerCard").textContent = up;
+  document.getElementById("rc").textContent = runningCount;
+  document.getElementById("tc").textContent = ((runningCount)/(remainingCards/52)).toFixed(2);
 
-  document.getElementById("rc").textContent=runningCount;
-  document.getElementById("tc").textContent=tc;
-  document.getElementById("advice").textContent=adv;
-  document.getElementById("explanation").textContent="Basic + True Count";
+  const yourHand = [p1, p2];
+  const baseAdvice = basicStrategy(yourHand, up);
+  document.getElementById("advice").textContent = baseAdvice;
+
+  // Run Monte Carlo
+  const trials = 10000;
+  const sim = monteCarloDealer(yourHand, up, visibleCards, trials);
+
+  const pWin = sim.win / trials;
+  const pPush = sim.push / trials;
+  const pLoss = sim.loss / trials;
+
+  const ciWin = confidenceInterval(pWin, trials).toFixed(3);
+  const ciPush = confidenceInterval(pPush, trials).toFixed(3);
+  const ciLoss = confidenceInterval(pLoss, trials).toFixed(3);
+
+  document.getElementById("explanation").textContent =
+    `Win: ${(pWin*100).toFixed(1)}% ± ${(ciWin*100).toFixed(1)}%, ` +
+    `Push: ${(pPush*100).toFixed(1)}% ± ${(ciPush*100).toFixed(1)}%, ` +
+    `Loss: ${(pLoss*100).toFixed(1)}% ± ${(ciLoss*100).toFixed(1)}%`;
 
   buildStrategyTables();
-  highlightStrategy(yourHand,up);
+  highlightStrategy(yourHand, up);
 
-  historyArr.push({ player:yourHand, dealer:up, advice:adv, tc:trueCount() });
-  localStorage.setItem("bjHistory",JSON.stringify(historyArr));
+  historyArr.push({
+    time: new Date().toLocaleTimeString(),
+    player: yourHand,
+    dealer: up,
+    advice: baseAdvice,
+    trueCount: ((runningCount)/(remainingCards/52)).toFixed(2),
+    pWin: (pWin*100).toFixed(1),
+    pPush: (pPush*100).toFixed(1),
+    pLoss: (pLoss*100).toFixed(1)
+  });
+  localStorage.setItem("bjHistory", JSON.stringify(historyArr));
   renderHistory();
   updateCharts();
 };
-
-/*************************
- HISTORY & CHARTS
-*************************/
-function renderHistory(){
-  const ul=document.getElementById("historyList");
-  ul.innerHTML="";
-  historyArr.slice(-15).reverse().forEach(h=>{
-    const li=document.createElement("li");
-    li.textContent=`${h.player.join(", ")} vs ${h.dealer} | ${h.advice} (TC=${h.tc})`;
-    ul.appendChild(li);
-  });
-}
-
-function updateCharts(){
-  const results=historyArr.map(x=>x.advice);
-  const counts=historyArr.map(x=>parseFloat(x.tc));
-
-  const wins=results.filter(r=>"Stand").length;
-  const losses=results.filter(r=>"Hit").length;
-
-  const ctx1=document.getElementById("winRateChart")?.getContext("2d");
-  if(ctx1){
-    if(winRateChart) winRateChart.destroy();
-    winRateChart=new Chart(ctx1,{type:"pie",data:{
-      labels:["Stand","Hit"],
-      datasets:[{data:[wins,losses],backgroundColor:["#4caf50","#f44336"]}]
-    }});
-  }
-
-  const ctx2=document.getElementById("trueCountChart")?.getContext("2d");
-  if(ctx2){
-    if(trueCountChart) trueCountChart.destroy();
-    trueCountChart=new Chart(ctx2,{type:"line",data:{
-      labels:counts.map((_,i)=>i+1),
-      datasets:[{label:"True Count",data:counts,borderColor:"#2196f3",fill:false}]
-    }});
-  }
-}
-
-/*************************
- NEXT HAND / NEW SHOE
-*************************/
-document.getElementById("nextHand").onclick = ()=>{
-  for(let i=1;i<=14;i++){
-    const el=document.getElementById(`p${i}`);
-    if(el) el.selectedIndex=0;
-  }
-  document.getElementById("dealerUp").selectedIndex=0;
-};
-
-document.getElementById("newShoe").onclick = ()=>{ runningCount=0; remainingCards=312; };
