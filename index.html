@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Blackjack Trainer Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<title>Blackjack Trainer Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <header>
   <h1>Blackjack Trainer Pro</h1>
-  <p>Tap cards, track seats & counts, get strategy + odds</p>
+  <p>Flexible Seats • Tap Cards • Strategy • Odds • EV • Side Bets</p>
 </header>
+
+<section id="controls">
+  <button id="addSeat">➕ Add Player</button>
+  <button id="removeSeat">➖ Remove Player</button>
+</section>
 
 <section id="cardEntry">
   <h2>Tap Cards as Dealt</h2>
   <div id="cardButtons" class="cardButtons"></div>
 
   <div id="seats" class="seatContainer"></div>
-
   <p><strong>Dealer Upcard:</strong> <span id="dealerCard">—</span></p>
 
   <div class="actions">
@@ -33,7 +38,20 @@
   <p><strong>Running Count:</strong> <span id="runningCount">0</span></p>
   <p><strong>True Count:</strong> <span id="trueCount">0</span></p>
   <p><strong>Recommended Move (You):</strong> <span id="strategy">—</span></p>
-  <p><strong>Win Odds (approx):</strong> <span id="winOdds">—</span></p>
+  <p><strong>Win / Push / Loss Odds:</strong></p>
+  <p>Win: <span id="winPct">—</span>% | Push: <span id="pushPct">—</span>% | Loss: <span id="lossPct">—</span>%</p>
+  <p><strong>Expected Value (EV):</strong> <span id="evDisplay">—</span></p>
+  <p><strong>Side Bets:</strong> <span id="sideBetResults">—</span></p>
+</section>
+
+<section id="charts">
+  <canvas id="winRateChart"></canvas>
+  <canvas id="trueCountChart"></canvas>
+</section>
+
+<section id="historySection">
+  <h2>History</h2>
+  <ul id="historyList"></ul>
 </section>
 
 <script src="app.js"></script>
