@@ -1,41 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Blackjack Trainer Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
+const ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+const hiLo = { "2": 1, "3": 1, "4": 1, "5": 1, "6": 1, "7": 0, "8": 0, "9": 0, "10": -1, "J": -1, "Q": -1, "K": -1, "A": -1 };
 
-  <header>
-    <h1>Blackjack Trainer Pro</h1>
-    <p>Card Counting • Multi-Seat • Strategy</p>
-  </header>
+const totalSeats = 7; // You + 6 others
+let seats = Array.from({ length: totalSeats }, () => []);
+let dealerCard = null;
+let shoe = buildShoe();
 
-  <section class="card-input">
-    <h2>Tap Cards as Dealt</h2>
-    <div class="card-buttons" id="cardButtons"></div>
+function buildShoe(decks = 6) {
+  const counts = {};
+  ranks.forEach(rank => counts[rank] = 4 * decks);
+  return counts;
+}
 
-    <div class="selection-summary">
-      <div id="seats"></div>
-      <p><strong>Dealer Upcard:</strong> <span id="dealerCard">—</span></p>
-    </div>
+function buildCardButtons() {
+  const container = document.getElementById("cardButtons");
+  ranks.forEach(rank => {
+    const btn = document.createElement("button");
+    btn.textContent = rank;
+    btn.onclick = () => recordCard(rank);
+    container.appendChild(btn);
+  });
+}
 
-    <div class="actions">
-      <button id="clear">Clear</button>
-      <button id="evaluate">Evaluate</button>
-    </div>
-  </section>
+function recordCard(rank) {
+  if (shoe[rank] <= 0) {
+    alert(`No more ${rank}s in shoe.`);
+    return;
+  }
 
-  <section class="results">
-    <h2>Results</h2>
-    <p><strong>Running Count:</strong> <span id="runningCount">0</span></p>
-    <p><strong>True Count:</strong> <span id="trueCount">0</span></p>
-    <p><strong>Recommended Move (Your Hand):</strong> <span id="strategy">—</span></p>
-    <p><strong>Win Odds:</strong> <span id="winOdds">—</span></p>
-  </section>
+  for (let i = 0; i < totalSeats; i++) {
+    if (seats[i].length < 2) {
+      seats[i].push(rank);
+      shoe[rank]--;
+      updateUI();
+      updateCounts();
+      return;
+    }
+  }
 
-  <script src="app.js"></script>
-</body>
-</html>
+  if (!dealerCard) {
+    dealerCard = rank;
+    shoe[rank]--;
+    updateUI();
+    updateCounts();
+    return;
+  }
+
+  alert("All seats and dealer card are full.");
+}
+
+function handValue(cards) {
+  let total = 0, aces = 0;
+  for (let c of cards) {
+    if (["J", "Q", "K"].includes(c)) total += 10;
+    else if (c === "A") { total += 11; aces++; }
+    else total += parseInt(c);
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+  return total;
+}
+
+function getStrategy(player, dealer) {
+  const total = handValue(player);
+  if (total <= 11) return "Hit";
+  if (total >= 17) return "Stand";
+  return (dealer === "7" || dealer === "A") ? "Hit" : "Stand";
+}
+
+function simulateWinOdds(player, dealer) {
+  return Math.random() * 0.3 + 0.35;
+}
+
+function evaluate() {
+  if (seats[0].length < 2 || !dealerCard) {
+    alert("Add at least 2 cards for yourself and 1 dealer upcard.");
+    return;
+  }
+
+  const strat = getStrategy(seats[0], dealerCard);
+  document.getElementById("strategy").textContent = strat;
+
+  const odds = simulateWinOdds(seats[0], dealerCard);
+  document.getElementById("winOdds").textContent = `${(odds * 100).toFixed(1)}%`;
+}
+
+function updateCounts() {
+  let count = 0, remaining = 0;
+  for (let rank in shoe) {
+    count += (hiLo[rank] || 0) * (4 * 6 - shoe[rank]);
+    remaining += shoe[rank];
+  }
+  const trueCount = (remaining ? (count / (remaining / 52)) : 0).toFixed(2);
+  document.getElementById("runningCount").textContent = count;
+  document.getElementById("trueCount").textContent = trueCount;
+}
+
+function updateUI() {
+  const seatDisplay = document.getElementById("seats");
+  seatDisplay.innerHTML = "";
+  seats.forEach((hand, i) => {
+    const div = document.createElement("div");
+    div.className = "seat";
+    div.innerHTML = `<strong>${i === 0 ? "You" : "Player " + i}:</strong> ${hand.join(", ") || "—"}`;
+    seatDisplay.appendChild(div);
+  });
+
+  document.getElementById("dealerCard").textContent = dealerCard || "—";
+}
+
+function clearAll() {
+  seats = Array.from({ length: totalSeats }, () => []);
+  dealerCard = null;
+  shoe = buildShoe();
+  document.getElementById("strategy").textContent = "—";
+  document.getElementById("winOdds").textContent = "—";
+  updateUI();
+  updateCounts();
+}
+
+document.getElementById("evaluate").onclick = evaluate;
+document.getElementById("clear").onclick = clearAll;
+
+buildCardButtons();
+updateUI();
+updateCounts();
