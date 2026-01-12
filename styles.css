@@ -1,72 +1,13 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #fafafa;
-  margin: 0;
-  padding: 0;
-}
-
-header {
-  background: #2a2a72;
-  color: white;
-  padding: 15px;
-  text-align: center;
-}
-
-section {
-  max-width: 900px;
-  margin: auto;
-  padding: 15px;
-}
-
-.row {
+#seats {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin: 15px 0;
 }
 
-select {
-  padding: 6px;
-  font-size: 1em;
-}
-
-button {
-  padding: 8px 16px;
-  background: #2a72b2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #245a90;
-}
-
-.hint {
-  font-size: 1.2em;
-  font-weight: bold;
-  color: darkgreen;
-}
-
-.basicTable {
-  border-collapse: collapse;
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.basicTable td, .basicTable th {
-  border: 1px solid #999;
-  padding: 5px;
-  text-align: center;
-}
-
-.highlight {
-  background: yellow;
-}
-
-.playerSeat {
-  padding-left: 5px;
-  border-left: 3px solid #ccc;
-  margin-bottom: 8px;
+.seat {
+  background: #f0f0f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  min-width: 100px;
 }
