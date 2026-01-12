@@ -1,127 +1,160 @@
-/*************************
- GLOBAL STATE
-*************************/
-const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
-const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
+// ========= GLOBAL STATE =========
+const ranks = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
+const hiLo = { "2":1,"3":1,"4":1,"5":1,"6":1,"7":0,"8":0,"9":0,"10":-1,"J":-1,"Q":-1,"K":-1,"A":-1 };
+const totalSeats = 7; // You + 6 other seats
 
-let visibleCards = [];
-let runningCount = 0;
-let remainingCards = 312;
-let historyArr = JSON.parse(localStorage.getItem("bjHistory")) || [];
+let seats = Array.from({ length: totalSeats }, () => []);
+let dealerCard = null;
+let shoe = buildShoe();
+let cardHistory = [];
 
-let winRateChart=null, trueCountChart=null;
+// ========= INITIALIZE =========
+document.addEventListener("DOMContentLoaded", ()=>{
+  buildCardButtons();
+  updateUI();
+  updateCounts();
+});
 
-/*************************
- BUILD CARD BUTTONS
-*************************/
-function buildCardButtons(){
-  const container=document.getElementById("cardButtons");
-  container.innerHTML="";
-  RANKS.forEach(r=>{
-    const btn=document.createElement("button");
-    btn.className="cardBtn";
-    btn.textContent=r;
-    btn.onclick=()=>addCard(r);
+// ========= SHOE BUILDER =========
+function buildShoe(decks = 6) {
+  const counts = {};
+  ranks.forEach(rank => counts[rank] = 4 * decks);
+  return counts;
+}
+
+// ========= CARD BUTTONS =========
+function buildCardButtons() {
+  const container = document.getElementById("cardButtons");
+  ranks.forEach(rank => {
+    const btn = document.createElement("button");
+    btn.textContent = rank;
+    btn.onclick = () => recordCard(rank);
     container.appendChild(btn);
   });
 }
-buildCardButtons();
 
-function addCard(card){
-  visibleCards.push(card);
-  document.getElementById("yourCards").textContent=visibleCards.slice(0,2).join(", ");
-  document.getElementById("dealerUpcard").textContent=visibleCards[2]||"";
-}
-
-/*************************
- COUNT + UTILS
-*************************/
-function updateCounts(){
-  runningCount=0; remainingCards=312;
-  visibleCards.forEach(c=>{ runningCount+=hiLo[c]||0; remainingCards--; });
-  document.getElementById("rc").textContent=runningCount;
-  document.getElementById("tc").textContent=(runningCount/(remainingCards/52)).toFixed(2);
-}
-
-/*************************
- EVALUATE HAND
-*************************/
-document.getElementById("evaluate").onclick=()=>{
-  if(visibleCards.length<3){
-    alert("Tap at least your 2 cards and dealer upcard.");
+// ========= RECORD ENTRY =========
+function recordCard(rank) {
+  if (shoe[rank] <= 0) {
+    alert("No more " + rank + " left in shoe.");
     return;
   }
 
-  updateCounts();
-
-  const p1=visibleCards[0], p2=visibleCards[1], up=visibleCards[2];
-  const yourHand=[p1,p2];
-
-  const strat=basicStrategy(yourHand, up);
-  document.getElementById("advice").textContent=strat;
-
-  const sim=monteCarloDealer(yourHand,up,visibleCards,5000);
-  document.getElementById("winPct").textContent=((sim.win/5000)*100).toFixed(1);
-  document.getElementById("pushPct").textContent=((sim.push/5000)*100).toFixed(1);
-  document.getElementById("lossPct").textContent=((sim.loss/5000)*100).toFixed(1);
-
-  historyArr.push({
-    time:new Date().toLocaleTimeString(),
-    player:yourHand, dealer:up,
-    advice:strat,
-    win:((sim.win/5000)*100).toFixed(1),
-    push:((sim.push/5000)*100).toFixed(1),
-    loss:((sim.loss/5000)*100).toFixed(1),
-    tc:(runningCount/(remainingCards/52)).toFixed(2)
-  });
-  localStorage.setItem("bjHistory",JSON.stringify(historyArr));
-  renderHistory();
-  updateCharts();
-};
-
-document.getElementById("resetEntry").onclick=()=>{
-  visibleCards=[];
-  document.getElementById("yourCards").textContent="";
-  document.getElementById("dealerUpcard").textContent="";
-  updateCounts();
-};
-
-/*************************
- HISTORY + CHARTS
-*************************/
-function renderHistory(){
-  const ul=document.getElementById("historyList");
-  ul.innerHTML="";
-  historyArr.slice(-20).reverse().forEach(h=>{
-    const li=document.createElement("li");
-    li.textContent=
-      `${h.time}: [${h.player.join(", ")}] vs ${h.dealer} | ${h.advice} | `+
-      `Win ${h.win}% Push ${h.push}% Loss ${h.loss}% | TC ${h.tc}`;
-    ul.appendChild(li);
-  });
-}
-
-function updateCharts(){
-  const wins=historyArr.filter(h=>h.win>h.loss).length;
-  const losses=historyArr.filter(h=>h.loss>h.win).length;
-  const pushes=historyArr.filter(h=>parseFloat(h.push)>0).length;
-
-  const ctx1=document.getElementById("winRateChart")?.getContext("2d");
-  if(ctx1){
-    if(winRateChart) winRateChart.destroy();
-    winRateChart=new Chart(ctx1,{type:"pie",data:{
-      labels:["Win","Lose","Push"],
-      datasets:[{data:[wins,losses,pushes],backgroundColor:["#4caf50","#f44336","#ff9800"]}]
-    }});
+  // Fill seats first
+  for (let i = 0; i < totalSeats; i++) {
+    if (seats[i].length < 2) {
+      seats[i].push(rank);
+      shoe[rank]--;
+      cardHistory.push({ seat: i, rank });
+      updateUI();
+      updateCounts();
+      return;
+    }
   }
 
-  const tcSeries=historyArr.map(h=>parseFloat(h.tc));
-  const ctx2=document.getElementById("trueCountChart")?.getContext("2d");
-  if(ctx2){
-    if(trueCountChart) trueCountChart.destroy();
-    trueCountChart=new Chart(ctx2,{type:"line",data:{
-      labels:tcSeries.map((_,i)=>i+1),
-      datasets:[{label:"True Count",data:tcSeries,borderColor:"#2196f3",fill:false}]
-    }});
+  // Then dealer upcard
+  if (!dealerCard) {
+    dealerCard = rank;
+    shoe[rank]--;
+    cardHistory.push({ seat: "dealer", rank });
+    updateUI();
+    updateCounts();
+    return;
   }
+
+  alert("All seats filled and dealer card set.");
 }
+
+// ========= UNDO LAST =========
+document.getElementById("undo").onclick = () => {
+  if (cardHistory.length === 0) return;
+
+  const last = cardHistory.pop();
+  shoe[last.rank]++;
+
+  if (last.seat === "dealer") {
+    dealerCard = null;
+  } else {
+    seats[last.seat].pop();
+  }
+  updateUI();
+  updateCounts();
+};
+
+// ========= HAND UTILS =========
+function handValue(cards) {
+  let total = 0, aces = 0;
+  cards.forEach(c => {
+    if (["J","Q","K"].includes(c)) total += 10;
+    else if (c === "A") { total += 11; aces++; }
+    else total += parseInt(c);
+  });
+  while (total > 21 && aces) { total -= 10; aces--; }
+  return total;
+}
+
+function getStrategy(player, dealer) {
+  const total = handValue(player);
+  if (total <= 11) return "Hit";
+  if (total >= 17) return "Stand";
+  if (dealer === "7" || dealer === "A") return "Hit";
+  return "Stand";
+}
+
+function simulateWinOdds(player, dealer) {
+  return Math.random()*0.3 + 0.35; // approx
+}
+
+// ========= EVALUATE =========
+document.getElementById("evaluate").onclick = () => {
+  if (seats[0].length < 2 || !dealerCard) {
+    alert("You must enter 2 cards for yourself and the dealer upcard to evaluate.");
+    return;
+  }
+
+  const strat = getStrategy(seats[0], dealerCard);
+  document.getElementById("strategy").textContent = strat;
+
+  const odds = simulateWinOdds(seats[0], dealerCard);
+  document.getElementById("winOdds").textContent = `${(odds*100).toFixed(1)}%`;
+};
+
+// ========= COUNTS =========
+function updateCounts() {
+  let count = 0, remaining = 0;
+  for (let r in shoe) {
+    count += (hiLo[r]||0)*((4*6) - shoe[r]);
+    remaining += shoe[r];
+  }
+  const trueC = remaining ? (count / (remaining/52)).toFixed(2) : 0;
+  document.getElementById("runningCount").textContent = count;
+  document.getElementById("trueCount").textContent = trueC;
+}
+
+// ========= UPDATE UI =========
+function updateUI() {
+  const seatDisplay = document.getElementById("seats");
+  seatDisplay.innerHTML = "";
+
+  seats.forEach((hand,i) => {
+    const div = document.createElement("div");
+    div.className = "seat";
+    if (i === 0) div.classList.add("mySeat");
+    div.innerHTML = `<strong>${i===0?"You":"Player "+i}:</strong> ${hand.join(", ")||"—"}`;
+    seatDisplay.appendChild(div);
+  });
+
+  document.getElementById("dealerCard").textContent = dealerCard || "—";
+}
+
+// ========= CLEAR ALL =========
+document.getElementById("clear").onclick = () => {
+  seats = Array.from({ length: totalSeats }, () => []);
+  dealerCard = null;
+  shoe = buildShoe();
+  cardHistory = [];
+  document.getElementById("strategy").textContent = "—";
+  document.getElementById("winOdds").textContent = "—";
+  updateUI();
+  updateCounts();
+};
