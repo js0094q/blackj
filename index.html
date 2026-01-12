@@ -4,52 +4,38 @@
   <meta charset="UTF-8">
   <title>Blackjack Trainer Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<header>
-  <h1>Blackjack Trainer Pro</h1>
-  <p>Shoe‑aware Odds • Strategy • True Count</p>
-</header>
+  <header>
+    <h1>Blackjack Trainer Pro</h1>
+    <p>Card Counting • Multi-Seat • Strategy</p>
+  </header>
 
-<section id="cardEntry">
-  <h2>Tap Cards as They Are Dealt</h2>
-  
-  <div id="cardButtons" class="row"></div>
+  <section class="card-input">
+    <h2>Tap Cards as Dealt</h2>
+    <div class="card-buttons" id="cardButtons"></div>
 
-  <!-- Display selection -->
-  <div class="row">
-    <p>Your Cards: <span id="yourCards"></span></p>
-    <p>Dealer Upcard: <span id="dealerUpcard"></span></p>
-  </div>
+    <div class="selection-summary">
+      <div id="seats"></div>
+      <p><strong>Dealer Upcard:</strong> <span id="dealerCard">—</span></p>
+    </div>
 
-  <div class="row">
-    <button id="resetEntry">Reset</button>
-    <button id="evaluate">Evaluate</button>
-  </div>
-</section>
+    <div class="actions">
+      <button id="clear">Clear</button>
+      <button id="evaluate">Evaluate</button>
+    </div>
+  </section>
 
-<section id="results">
-  <h2>Results</h2>
-  <p>Running Count: <span id="rc">0</span></p>
-  <p>True Count: <span id="tc">0</span></p>
-  <p>Strategy: <span id="advice">—</span></p>
-  <p>Odds: Win <span id="winPct">—</span>% | Push <span id="pushPct">—</span>% | Loss <span id="lossPct">—</span>%</p>
-</section>
+  <section class="results">
+    <h2>Results</h2>
+    <p><strong>Running Count:</strong> <span id="runningCount">0</span></p>
+    <p><strong>True Count:</strong> <span id="trueCount">0</span></p>
+    <p><strong>Recommended Move (Your Hand):</strong> <span id="strategy">—</span></p>
+    <p><strong>Win Odds:</strong> <span id="winOdds">—</span></p>
+  </section>
 
-<section id="charts">
-  <canvas id="winRateChart"></canvas>
-  <canvas id="trueCountChart"></canvas>
-</section>
-
-<section id="historySection">
-  <h2>History</h2>
-  <ul id="historyList"></ul>
-</section>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
