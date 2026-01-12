@@ -1,47 +1,25 @@
-/*************************
- GLOBAL STATE
-*************************/
+// ===== GLOBAL STATE =====
 const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
 const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
 const TOTAL_DECKS = 6;
 
-let seats = [];            // dynamic seats
+let seats = [];  
 let dealerUpcard = null;
 let shoe = buildShoe();
 let cardHistory = [];
 let historyArr = JSON.parse(localStorage.getItem("bjHistory")) || [];
 
-let winRateChart, trueCountChart;
-
-/*************************
- SHOE BUILDER
-*************************/
+// ===== BUILD SHOE =====
 function buildShoe(){
   const counts = {};
   RANKS.forEach(r => counts[r] = 4 * TOTAL_DECKS);
   return counts;
 }
 
-/*************************
- DYNAMIC SEAT MANAGEMENT
-*************************/
-document.getElementById("addSeat").onclick = () => {
-  seats.push([]);
-  updateUI();
-};
-document.getElementById("removeSeat").onclick = () => {
-  if (seats.length === 0) return;
-  const removed = seats.pop();
-  removed.forEach(r => shoe[r]++); // put cards back in shoe
-  updateUI(); updateCounts();
-};
-
-/*************************
- CARD BUTTON UI
-*************************/
+// ===== BUTTONS UI =====
 function buildCardButtons(){
   const container = document.getElementById("cardButtons");
-  container.innerHTML = "";
+  container.innerHTML="";
   RANKS.forEach(r => {
     const btn = document.createElement("button");
     btn.textContent = r;
@@ -50,16 +28,15 @@ function buildCardButtons(){
   });
 }
 
-/*************************
- RECORD CARD
-*************************/
+// ===== RECORD CARD =====
 function recordCard(rank){
-  if (shoe[rank] <= 0){
+  if (shoe[rank] <= 0) {
     alert("No more " + rank + " in shoe.");
     return;
   }
+  // Fill seats in order
   for(let i=0;i<seats.length;i++){
-    if (seats[i].length < 2){
+    if(seats[i].length < 2){
       seats[i].push(rank);
       shoe[rank]--;
       cardHistory.push({seat:i,rank});
@@ -67,32 +44,40 @@ function recordCard(rank){
       return;
     }
   }
-  if (!dealerUpcard){
+  // Then dealer
+  if(!dealerUpcard){
     dealerUpcard = rank;
     shoe[rank]--;
     cardHistory.push({seat:"dealer",rank});
     updateUI(); updateCounts();
     return;
   }
-  alert("All seats and dealer card are full.");
+  alert("All seats and dealer card are filled.");
 }
 
-/*************************
- UNDO LAST
-*************************/
-document.getElementById("undo").onclick = () => {
-  if (!cardHistory.length) return;
+// ===== UNDO LAST =====
+document.getElementById("undo").onclick = ()=>{
+  if(!cardHistory.length) return;
   const last = cardHistory.pop();
   shoe[last.rank]++;
-  if (last.seat === "dealer") dealerUpcard = null;
+  if(last.seat==="dealer") dealerUpcard = null;
   else seats[last.seat].pop();
-  updateUI();
-  updateCounts();
+  updateUI(); updateCounts();
 };
 
-/*************************
- HAND LOGIC
-*************************/
+// ===== SEAT CONTROLS =====
+document.getElementById("addSeat").onclick = ()=>{
+  seats.push([]);
+  updateUI();
+};
+document.getElementById("removeSeat").onclick = ()=>{
+  if(!seats.length) return;
+  const removed = seats.pop();
+  removed.forEach(r => shoe[r]++);
+  updateUI(); updateCounts();
+};
+
+// ===== HAND VALUE =====
 function handValue(cards){
   let total=0, aces=0;
   cards.forEach(c=>{
@@ -104,13 +89,11 @@ function handValue(cards){
   return total;
 }
 
-/*************************
- BASIC STRATEGY
-*************************/
-function basicStrategy(hand, dealer){
-  const total = handValue(hand);
+// ===== BASIC STRATEGY with Split/Double =====
+function basicStrategy(hand,dealer){
+  const total=handValue(hand);
   const upVal = dealer==="A"?11:(["J","Q","K"].includes(dealer)?10:parseInt(dealer));
-  const isPair = hand[0] === hand[1];
+  const isPair = hand[0]===hand[1];
   const isSoft = hand.includes("A") && total<=21 && !["10","J","Q","K"].includes(hand[0]);
 
   if(isPair){
@@ -135,27 +118,19 @@ function basicStrategy(hand, dealer){
   return "Hit";
 }
 
-/*************************
- SIDE BETS
-*************************/
+// ===== SIDE BETS =====
 function sideBetResults(hand,dealerUp){
   const results = [];
   if(hand[0]===hand[1]) results.push("PAIR (11:1)");
-
-  const rummySet=[...hand,dealerUp];
-  const sortedRanks=rummySet.slice().sort((a,b)=>RANKS.indexOf(a)-RANKS.indexOf(b));
-  const isStraight = (RANKS.indexOf(sortedRanks[1])===RANKS.indexOf(sortedRanks[0])+1 &&
-                      RANKS.indexOf(sortedRanks[2])===RANKS.indexOf(sortedRanks[1])+1);
+  const rummy = [...hand,dealerUp].sort((a,b)=>RANKS.indexOf(a)-RANKS.indexOf(b));
+  const isStraight = RANKS.indexOf(rummy[1])===RANKS.indexOf(rummy[0])+1 &&
+                     RANKS.indexOf(rummy[2])===RANKS.indexOf(rummy[1])+1;
   if(isStraight) results.push("RUMMY (9:1)");
-
   if(hand[0]==="7"&&hand[1]==="7"&&dealerUp==="7") results.push("JACKPOT 777");
-
   return results.length?results.join(", "):"—";
 }
 
-/*************************
- DEALER SIMULATION
-*************************/
+// ===== DEALER SIMULATION (Monte Carlo) =====
 function buildFullShoe(visible){
   const deck=[];
   const suits=["H","D","C","S"];
@@ -163,7 +138,7 @@ function buildFullShoe(visible){
     RANKS.forEach(r=>suits.forEach(s=>deck.push(r)));
   }
   visible.forEach(v=>{
-    const idx = deck.indexOf(v);
+    const idx=deck.indexOf(v);
     if(idx!==-1) deck.splice(idx,1);
   });
   return deck;
@@ -171,25 +146,25 @@ function buildFullShoe(visible){
 
 function simulateDealerPlay(up,hole,deck){
   const hand=[up,hole];
-  let total = handValue(hand);
+  let total=handValue(hand);
   while(total<17 || (total===17 && hand.includes("A"))){
     if(!deck.length) break;
-    const idx = Math.floor(Math.random()*deck.length);
-    const card = deck.splice(idx,1)[0];
+    const idx=Math.floor(Math.random()*deck.length);
+    const card=deck.splice(idx,1)[0];
     hand.push(card);
-    total = handValue(hand);
+    total=handValue(hand);
   }
   return total;
 }
 
-function monteCarloOdds(playerHand, upcard, visible, trials=5000){
+function monteCarloOdds(playerHand, upcard, visible, trials=3000){
   const baseShoe=buildFullShoe(visible);
   const counts={win:0,push:0,loss:0};
   for(let t=0;t<trials;t++){
-    const shoe=baseShoe.slice();
-    const holeIdx=Math.floor(Math.random()*shoe.length);
-    const hole = shoe.splice(holeIdx,1)[0];
-    const dealerTotal=simulateDealerPlay(upcard,hole,shoe);
+    const deck=baseShoe.slice();
+    const holeIdx=Math.floor(Math.random()*deck.length);
+    const hole=deck.splice(holeIdx,1)[0];
+    const dealerTotal=simulateDealerPlay(upcard,hole,deck);
     const playerTotal=handValue(playerHand);
 
     if(playerTotal>21) counts.loss++;
@@ -201,17 +176,15 @@ function monteCarloOdds(playerHand, upcard, visible, trials=5000){
   return counts;
 }
 
-/*************************
- EVALUATE
-*************************/
-document.getElementById("evaluate").onclick = () => {
+// ===== EVALUATE =====
+document.getElementById("evaluate").onclick = ()=>{
   if(!seats.length || seats[0].length<2 || !dealerUpcard){
-    alert("Add at least one seat with your 2 cards and a dealer upcard.");
+    alert("Enter your own 2 cards and the dealer upcard.");
     return;
   }
 
   const yourHand = seats[0];
-  const advice = basicStrategy(yourHand, dealerUpcard);
+  const advice = basicStrategy(yourHand,dealerUpcard);
   document.getElementById("strategy").textContent = advice;
 
   const visible=[...yourHand,dealerUpcard];
@@ -228,30 +201,25 @@ document.getElementById("evaluate").onclick = () => {
   document.getElementById("sideBetResults").textContent = sideBetResults(yourHand,dealerUpcard);
 
   historyArr.push({
-    time:new Date().toLocaleTimeString(),
-    yourHand,dealer:dealerUpcard,advice,
-    win:odds.win,push:odds.push,loss:odds.loss
+    time:new Date().toLocaleTimeString(), yourHand,dealer:dealerUpcard,advice
   });
   localStorage.setItem("bjHistory",JSON.stringify(historyArr));
 };
 
-/*************************
- COUNT + UI
-*************************/
+// ===== COUNT + UI =====
 function updateCounts(){
-  let count=0, remaining=0;
+  let count=0,remaining=0;
   for(let r in shoe){
     count+=(hiLo[r]||0)*((4*TOTAL_DECKS)-shoe[r]);
     remaining+=shoe[r];
   }
   document.getElementById("runningCount").textContent=count;
-  document.getElementById("trueCount").textContent=remaining? (count/(remaining/52)).toFixed(2):0;
+  document.getElementById("trueCount").textContent=remaining?(count/(remaining/52)).toFixed(2):0;
 }
 
 function updateUI(){
   const seatDiv=document.getElementById("seats");
   seatDiv.innerHTML="";
-
   seats.forEach((hand,i)=>{
     const d=document.createElement("div");
     d.className="seat";
@@ -262,10 +230,7 @@ function updateUI(){
   document.getElementById("dealerCard").textContent=dealerUpcard||"—";
 }
 
-/*************************
- CLEAR ALL
-*************************/
-document.getElementById("clear").onclick = () => {
+document.getElementById("clear").onclick = ()=>{
   seats=[]; dealerUpcard=null;
   shoe=buildShoe(); cardHistory=[];
   document.getElementById("strategy").textContent="—";
