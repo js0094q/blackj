@@ -1,14 +1,14 @@
 body {
   font-family: Arial, sans-serif;
-  background: #fafafa;
   margin: 0;
   padding: 0;
+  background: #fafafa;
 }
 
 header {
   background: #2a2a72;
   color: white;
-  padding: 15px;
+  padding: 12px;
   text-align: center;
 }
 
@@ -35,16 +35,15 @@ header {
 .seatContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin: 15px 0;
+  gap: 8px;
+  margin: 10px 0;
 }
 
 .seat {
   padding: 8px 12px;
   background: #fff;
   border: 1px solid #ccc;
-  border-radius: 6px;
-  min-width: 120px;
+  border-radius: 4px;
 }
 
 .mySeat {
@@ -54,23 +53,21 @@ header {
 
 .actions {
   margin-top: 10px;
-  gap: 8px;
+  display: flex;
+  gap: 10px;
 }
 
 .actions button {
   padding: 8px 14px;
   font-size: 15px;
   cursor: pointer;
-  margin-right: 6px;
 }
 
 #controls {
-  margin: 10px auto;
   text-align: center;
+  margin: 10px;
 }
 
 #controls button {
-  padding: 8px 12px;
   margin: 0 5px;
-  font-size: 16px;
 }
