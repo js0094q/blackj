@@ -8,25 +8,34 @@
 </head>
 <body>
 
+<header>
   <h1>Blackjack Trainer Pro</h1>
-  <section class="card-input">
-    <h2>Tap Cards</h2>
-    <div id="cardButtons"></div>
+  <p>Tap cards, track seats & counts, get strategy + odds</p>
+</header>
 
-    <div id="seats"></div>
-    <p><strong>Dealer Upcard:</strong> <span id="dealerCard">—</span></p>
+<section id="cardEntry">
+  <h2>Tap Cards as Dealt</h2>
+  <div id="cardButtons" class="cardButtons"></div>
 
+  <div id="seats" class="seatContainer"></div>
+
+  <p><strong>Dealer Upcard:</strong> <span id="dealerCard">—</span></p>
+
+  <div class="actions">
+    <button id="undo">Undo Last</button>
+    <button id="clear">Clear All</button>
     <button id="evaluate">Evaluate</button>
-    <button id="clear">Clear</button>
-  </section>
+  </div>
+</section>
 
-  <section>
-    <p><strong>Running Count:</strong> <span id="runningCount">0</span></p>
-    <p><strong>True Count:</strong> <span id="trueCount">0</span></p>
-    <p><strong>Recommended Move:</strong> <span id="strategy">—</span></p>
-    <p><strong>Win Odds:</strong> <span id="winOdds">—</span></p>
-  </section>
+<section id="results">
+  <h2>Results</h2>
+  <p><strong>Running Count:</strong> <span id="runningCount">0</span></p>
+  <p><strong>True Count:</strong> <span id="trueCount">0</span></p>
+  <p><strong>Recommended Move (You):</strong> <span id="strategy">—</span></p>
+  <p><strong>Win Odds (approx):</strong> <span id="winOdds">—</span></p>
+</section>
 
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
