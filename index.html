@@ -12,60 +12,40 @@
 
 <header>
   <h1>Blackjack Trainer Pro</h1>
-  <p>Manual Entry • True Count • Dynamic Seats • Charts</p>
+  <p>Shoe‑aware Odds • Strategy • True Count</p>
 </header>
 
-<section id="entry">
-  <h2>Enter Cards</h2>
+<section id="cardEntry">
+  <h2>Tap Cards as They Are Dealt</h2>
+  
+  <div id="cardButtons" class="row"></div>
 
+  <!-- Display selection -->
   <div class="row">
-    <label>Your Card 1: <select id="p1"></select></label>
-    <label>Your Card 2: <select id="p2"></select></label>
-  </div>
-
-  <div id="playerSeats"></div>
-
-  <div class="row">
-    <button id="addSeat">➕ Add Player Seat</button>
-    <button id="removeSeat">➖ Remove Seat</button>
+    <p>Your Cards: <span id="yourCards"></span></p>
+    <p>Dealer Upcard: <span id="dealerUpcard"></span></p>
   </div>
 
   <div class="row">
-    <label>Dealer Upcard: <select id="dealerUp"></select></label>
-  </div>
-
-  <div class="row">
+    <button id="resetEntry">Reset</button>
     <button id="evaluate">Evaluate</button>
-    <button id="nextHand">Next Hand</button>
-    <button id="newShoe">New Shoe</button>
   </div>
-</section>
-
-<section id="strategyInline">
-  <h2>Basic Strategy Table</h2>
-  <div id="strategyTables"></div>
 </section>
 
 <section id="results">
-  <p>Your Cards: <span id="yourCards"></span></p>
-  <p>Dealer Upcard: <span id="dealerCard"></span></p>
-
-  <p>Running Count: <strong id="rc">0</strong></p>
-  <p>True Count: <strong id="tc">0</strong></p>
-
-  <p class="hint">Recommended Move: <span id="advice">—</span></p>
-  <p id="explanation"></p>
-
-  <p>Outcome (click to enter): <span id="outcome">—</span></p>
+  <h2>Results</h2>
+  <p>Running Count: <span id="rc">0</span></p>
+  <p>True Count: <span id="tc">0</span></p>
+  <p>Strategy: <span id="advice">—</span></p>
+  <p>Odds: Win <span id="winPct">—</span>% | Push <span id="pushPct">—</span>% | Loss <span id="lossPct">—</span>%</p>
 </section>
 
 <section id="charts">
-  <h2>Charts</h2>
   <canvas id="winRateChart"></canvas>
   <canvas id="trueCountChart"></canvas>
 </section>
 
-<section id="history">
+<section id="historySection">
   <h2>History</h2>
   <ul id="historyList"></ul>
 </section>
