@@ -242,6 +242,28 @@ document.getElementById("clear").onclick = ()=>{
   updateUI(); updateCounts();
 };
 
+document.getElementById("resetHand").onclick = () => {
+  // Return all visible cards (player & dealer) to shoe
+  seats.flat().forEach(card => { shoe[card]++; });
+  if (dealerUpcard) shoe[dealerUpcard]++;
+  
+  // Reset player/dealer hands and history
+  seats = Array.from({ length: seats.length }, () => []);
+  dealerUpcard = null;
+  cardHistory = [];
+
+  // Keep history, counts, and shoe
+  document.getElementById("strategy").textContent = "—";
+  document.getElementById("winPct").textContent = "—";
+  document.getElementById("pushPct").textContent = "—";
+  document.getElementById("lossPct").textContent = "—";
+  document.getElementById("evDisplay").textContent = "—";
+  document.getElementById("sideBetResults").textContent = "—";
+  
+  updateUI();
+  updateCounts();
+};
+
 buildCardButtons();
 updateUI();
 updateCounts();
