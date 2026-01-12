@@ -1,155 +1,192 @@
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Blackjack Trainer Pro Loaded");
 
-  const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
-  const HI_LO = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
-  const TOTAL_DECKS = 6;
+console.log("Blackjack Trainer Pro – Engine Loaded");
 
-  let seats = [[]]; // seat 0 is YOU
-  let dealerUpcard = null;
-  let shoe = buildShoe();
-  let cardHistory = [];
-  let history = JSON.parse(localStorage.getItem("bjHistory")) || [];
+const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
+const TOTAL_DECKS = 6;
+const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
 
-  function buildShoe() {
-    const counts = {};
-    RANKS.forEach(r => counts[r] = 4 * TOTAL_DECKS);
-    return counts;
-  }
+let seats = [[]];
+let dealerUpcard = null;
+let shoe = buildShoe();
+let cardHistory = [];
 
-  function buildCardButtons() {
-    const wrap = document.getElementById("cardButtons");
-    wrap.innerHTML = "";
-    RANKS.forEach(rank => {
-      const btn = document.createElement("button");
-      btn.textContent = rank;
-      btn.onclick = () => addCard(rank);
-      wrap.appendChild(btn);
+let evChartInstance = null;
+
+function buildShoe(){
+  const c = {};
+  RANKS.forEach(r => c[r] = 4 * TOTAL_DECKS);
+  return c;
+}
+
+function buildFullDeck(visible){
+  const deck=[];
+  for(let d=0; d<TOTAL_DECKS; d++){
+    RANKS.forEach(r=>{
+      for(let i=0;i<4;i++) deck.push(r);
     });
   }
+  visible.forEach(v=>{
+    const i=deck.indexOf(v);
+    if(i>=0) deck.splice(i,1);
+  });
+  return deck;
+}
 
-  function addCard(rank) {
-    if (shoe[rank] <= 0) return alert("No more cards of that rank.");
+function handValue(cards){
+  let total=0, aces=0;
+  cards.forEach(c=>{
+    if(["J","Q","K"].includes(c)) total+=10;
+    else if(c==="A"){ total+=11; aces++; }
+    else total+=parseInt(c);
+  });
+  while(total>21 && aces){ total-=10; aces--; }
+  return total;
+}
 
-    for (let i = 0; i < seats.length; i++) {
-      if (seats[i].length < 2) {
-        seats[i].push(rank);
-        shoe[rank]--;
-        cardHistory.push({seat:i,rank});
-        updateUI(); updateCounts();
-        return;
-      }
+function simulateDealer(up,hole,deck){
+  const h=[up,hole];
+  let t=handValue(h);
+  while(t<17 || (t===17 && h.includes("A"))){
+    if(!deck.length) break;
+    h.push(deck.splice(Math.floor(Math.random()*deck.length),1)[0]);
+    t=handValue(h);
+  }
+  return t;
+}
+
+function simulateOutcome(playerTotal, deck, up){
+  const hole = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
+  const dTotal = simulateDealer(up, hole, deck);
+
+  if(playerTotal>21) return -1;
+  if(dTotal>21) return 1;
+  if(playerTotal>dTotal) return 1;
+  if(playerTotal<dTotal) return -1;
+  return 0;
+}
+
+function monteCarloEV(callback, trials=2000){
+  let ev=0;
+  for(let i=0;i<trials;i++) ev += callback();
+  return ev/trials;
+}
+
+function EV_Stand(hand, visible){
+  const total = handValue(hand);
+  return monteCarloEV(()=>{
+    const deck = buildFullDeck(visible);
+    return simulateOutcome(total, deck, visible[1]);
+  });
+}
+
+function EV_Hit(hand, visible){
+  return monteCarloEV(()=>{
+    const deck = buildFullDeck(visible);
+    const card = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
+    const newHand = [...hand,card];
+    const total = handValue(newHand);
+    return simulateOutcome(total, deck, visible[1]);
+  });
+}
+
+function EV_Double(hand, visible){
+  return monteCarloEV(()=>{
+    const deck = buildFullDeck(visible);
+    const card = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
+    const total = handValue([...hand,card]);
+    const r = simulateOutcome(total, deck, visible[1]);
+    return r*2;
+  });
+}
+
+function EV_Surrender(){
+  return -0.5;
+}
+
+function EV_Split(hand, visible){
+  if(hand[0]!==hand[1]) return null;
+
+  return monteCarloEV(()=>{
+    const deck = buildFullDeck(visible);
+    let ev=0;
+
+    for(let i=0;i<2;i++){
+      const card = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
+      const total = handValue([hand[0],card]);
+      ev += simulateOutcome(total, deck, visible[1]);
     }
+    return ev;
+  });
+}
 
-    if (!dealerUpcard) {
-      dealerUpcard = rank;
-      shoe[rank]--;
-      cardHistory.push({seat:"dealer",rank});
-      updateUI(); updateCounts();
-      return;
-    }
+function renderEVChart(values){
+  const ctx = document.getElementById("evChart").getContext("2d");
+  if(evChartInstance) evChartInstance.destroy();
 
-    alert("All hands filled. Reset hand.");
-  }
+  evChartInstance = new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels:Object.keys(values),
+      datasets:[{
+        label:"Expected Value",
+        data:Object.values(values),
+        backgroundColor:["#4caf50","#2196f3","#ff9800","#9c27b0","#f44336"]
+      }]
+    },
+    options:{ responsive:true }
+  });
+}
 
-  function undo() {
-    if (!cardHistory.length) return;
-    const last = cardHistory.pop();
-    shoe[last.rank]++;
-    if (last.seat === "dealer") dealerUpcard = null;
-    else seats[last.seat].pop();
-    updateUI(); updateCounts();
-  }
+function renderHeatmap(hand){
+  const canvas=document.getElementById("heatmap");
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  function resetHand() {
-    seats.forEach(h => h.length = 0);
-    dealerUpcard = null;
-    cardHistory = [];
-    updateUI();
-  }
+  const cellW=canvas.width/13;
+  const cellH=canvas.height;
 
-  function clearTable() {
-    seats = [[]];
-    dealerUpcard = null;
-    shoe = buildShoe();
-    cardHistory = [];
-    updateUI(); updateCounts();
-  }
+  RANKS.forEach((up,i)=>{
+    const visible=[...hand,up];
+    const ev=EV_Stand(hand,visible);
 
-  function addSeat() {
-    seats.push([]);
-    updateUI();
-  }
+    const color = ev>0 ? `rgba(0,200,0,${Math.min(ev,1)})` :
+                 `rgba(200,0,0,${Math.min(Math.abs(ev),1)})`;
 
-  function removeSeat() {
-    if (seats.length <= 1) return;
-    const removed = seats.pop();
-    removed.forEach(r => shoe[r]++);
-    updateUI(); updateCounts();
-  }
+    ctx.fillStyle=color;
+    ctx.fillRect(i*cellW,0,cellW,cellH);
+    ctx.fillStyle="#000";
+    ctx.fillText(up,i*cellW+cellW/2-4,20);
+  });
+}
 
-  function handValue(cards) {
-    let total = 0, aces = 0;
-    cards.forEach(c => {
-      if (["J","Q","K"].includes(c)) total += 10;
-      else if (c==="A") { total+=11; aces++; }
-      else total += parseInt(c);
-    });
-    while (total>21 && aces) { total-=10; aces--; }
-    return total;
-  }
+document.getElementById("evaluate").onclick = ()=>{
+  if(!dealerUpcard || seats[0].length<2) return alert("Enter your hand & dealer upcard");
 
-  function basicStrategy(hand,dealer) {
-    const total = handValue(hand);
-    const up = dealer==="A"?11:(["J","Q","K"].includes(dealer)?10:parseInt(dealer));
-    if (total >= 17) return "Stand";
-    if (total <= 11) return "Hit";
-    if (total === 12 && up>=4 && up<=6) return "Stand";
-    if (total >= 13 && up<=6) return "Stand";
-    if (total === 11) return "Double";
-    return "Hit";
-  }
+  const yourHand = seats[0];
+  const visible=[...yourHand,dealerUpcard];
 
-  function evaluate() {
-    if (!seats[0].length || !dealerUpcard) return alert("Enter your hand and dealer upcard.");
-    const move = basicStrategy(seats[0], dealerUpcard);
-    document.getElementById("strategy").textContent = move;
-  }
+  const evStand = EV_Stand(yourHand,visible);
+  const evHit = EV_Hit(yourHand,visible);
+  const evDouble = EV_Double(yourHand,visible);
+  const evSplit = EV_Split(yourHand,visible);
+  const evSurrender = EV_Surrender();
 
-  function updateCounts() {
-    let running = 0, remaining = 0;
-    for (let r in shoe) {
-      running += HI_LO[r] * ((4*TOTAL_DECKS) - shoe[r]);
-      remaining += shoe[r];
-    }
-    document.getElementById("runningCount").textContent = running;
-    document.getElementById("trueCount").textContent =
-      remaining ? (running/(remaining/52)).toFixed(2) : "0.00";
-  }
+  document.getElementById("evStand").textContent = evStand.toFixed(3);
+  document.getElementById("evHit").textContent = evHit.toFixed(3);
+  document.getElementById("evDouble").textContent = evDouble.toFixed(3);
+  document.getElementById("evSplit").textContent = evSplit===null?"N/A":evSplit.toFixed(3);
+  document.getElementById("evSurrender").textContent = evSurrender.toFixed(3);
 
-  function updateUI() {
-    const seatBox = document.getElementById("seats");
-    seatBox.innerHTML = "";
-    seats.forEach((hand,i)=>{
-      const d = document.createElement("div");
-      d.className = "seat";
-      d.textContent = `${i===0?"You":"Player "+i}: ${hand.join(", ") || "—"}`;
-      seatBox.appendChild(d);
-    });
-    document.getElementById("dealerCard").textContent = dealerUpcard || "—";
-  }
+  renderEVChart({
+    Stand:evStand,
+    Hit:evHit,
+    Double:evDouble,
+    Split:evSplit===null?0:evSplit,
+    Surrender:evSurrender
+  });
 
-  // Bind Buttons
-  document.getElementById("undo").onclick = undo;
-  document.getElementById("resetHand").onclick = resetHand;
-  document.getElementById("clearTable").onclick = clearTable;
-  document.getElementById("newShoe").onclick = clearTable;
-  document.getElementById("evaluate").onclick = evaluate;
-  document.getElementById("addSeat").onclick = addSeat;
-  document.getElementById("removeSeat").onclick = removeSeat;
+  renderHeatmap(yourHand);
+};
 
-  // Init
-  buildCardButtons();
-  updateUI();
-  updateCounts();
 });
