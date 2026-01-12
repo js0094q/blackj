@@ -13,7 +13,7 @@
 
 <header>
   <h1>Blackjack Trainer Pro</h1>
-  <p>Tap Cards • Flexible Seats • Strategy • Odds • EV • Side Bets</p>
+  <p>Tap Cards • Strategy • Odds • EV • Flexible Seats</p>
 </header>
 
 <section id="controls">
@@ -22,16 +22,16 @@
 </section>
 
 <section id="cardEntry">
-  <h2>Tap Cards as Dealt</h2>
+  <h2>Tap Cards</h2>
   <div id="cardButtons" class="cardButtons"></div>
 
   <div id="seats" class="seatContainer"></div>
   <p><strong>Dealer Upcard:</strong> <span id="dealerCard">—</span></p>
 
   <div class="actions">
-    <button id="undo">Undo Last</button>
-    <button id="resetHand">Reset Hand (Keep Shoe)</button>
-    <button id="clear">Clear Table (Full Reset)</button>
+    <button id="undo">Undo</button>
+    <button id="resetHand">Reset Hand</button>
+    <button id="clearTable">Clear Table</button>
     <button id="newShoe">New Shoe</button>
     <button id="evaluate">Evaluate</button>
   </div>
@@ -42,9 +42,8 @@
   <p><strong>Running Count:</strong> <span id="runningCount">0</span></p>
   <p><strong>True Count:</strong> <span id="trueCount">0</span></p>
   <p><strong>Recommended Move (You):</strong> <span id="strategy">—</span></p>
-  <p><strong>Win / Push / Loss Odds:</strong></p>
-  <p>Win: <span id="winPct">—</span>% | Push: <span id="pushPct">—</span>% | Loss: <span id="lossPct">—</span>%</p>
-  <p><strong>Expected Value (EV):</strong> <span id="evDisplay">—</span></p>
+  <p><strong>Odds:</strong> Win: <span id="winPct">—</span>% | Push: <span id="pushPct">—</span>% | Loss: <span id="lossPct">—</span>%</p>
+  <p><strong>EV:</strong> <span id="evDisplay">—</span></p>
   <p><strong>Side Bets:</strong> <span id="sideBetResults">—</span></p>
 </section>
 
@@ -53,6 +52,6 @@
   <ul id="historyList"></ul>
 </section>
 
-<script src="/app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
