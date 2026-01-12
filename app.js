@@ -46,7 +46,7 @@ function recordCard(rank){
       return;
     }
   }
-  // Then dealer
+  // Then dealer upcard
   if (!dealerUpcard){
     dealerUpcard = rank;
     shoe[rank]--;
@@ -54,7 +54,7 @@ function recordCard(rank){
     updateUI(); updateCounts();
     return;
   }
-  alert("All seats and dealer upcard are already set.");
+  alert("All seats and dealer upcard are filled.");
 }
 
 // ===== UNDO LAST =====
@@ -62,12 +62,9 @@ document.getElementById("undo").onclick = ()=>{
   if (!cardHistory.length) return;
   const last = cardHistory.pop();
   shoe[last.rank]++;
-
-  if (last.seat === "dealer") dealerUpcard = null;
+  if (last.seat==="dealer") dealerUpcard = null;
   else seats[last.seat].pop();
-
-  updateUI();
-  updateCounts();
+  updateUI(); updateCounts();
 };
 
 // ===== ADD / REMOVE SEAT =====
@@ -80,14 +77,13 @@ document.getElementById("removeSeat").onclick = ()=>{
   if (!seats.length) return;
   const removed = seats.pop();
   removed.forEach(c => shoe[c]++);
-  updateUI();
-  updateCounts();
+  updateUI(); updateCounts();
 };
 
-// ===== HAND & STRATEGY =====
+// ===== HAND VALUE =====
 function handValue(cards){
-  let total=0, aces=0;
-  cards.forEach(c=>{
+  let total = 0, aces = 0;
+  cards.forEach(c => {
     if (["J","Q","K"].includes(c)) total += 10;
     else if (c==="A"){ total += 11; aces++; }
     else total += parseInt(c);
@@ -96,10 +92,11 @@ function handValue(cards){
   return total;
 }
 
-function basicStrategy(hand,dealer){
+// ===== BASIC STRATEGY w/ SPLIT & DOUBLE =====
+function basicStrategy(hand, dealer){
   const total = handValue(hand);
   const upVal = dealer==="A"?11:(["J","Q","K"].includes(dealer)?10:parseInt(dealer));
-  const isPair = hand[0]===hand[1];
+  const isPair = hand[0] === hand[1];
   const isSoft = hand.includes("A") && total<=21 && !["10","J","Q","K"].includes(hand[0]);
 
   if(isPair){
@@ -124,7 +121,7 @@ function basicStrategy(hand,dealer){
   return "Hit";
 }
 
-// ===== SIDE BETS =====
+// ===== SIDE BET EVALUATION =====
 function sideBetResults(hand, dealerUp){
   const results = [];
   if(hand[0]===hand[1]) results.push("PAIR (11:1)");
@@ -133,18 +130,17 @@ function sideBetResults(hand, dealerUp){
   const isStraight = (RANKS.indexOf(rummySet[1])===RANKS.indexOf(rummySet[0])+1 &&
                       RANKS.indexOf(rummySet[2])===RANKS.indexOf(rummySet[1])+1);
   if(isStraight) results.push("RUMMY (9:1)");
-
-  if(hand[0]==="7" && hand[1]==="7" && dealerUp==="7") results.push("JACKPOT 777");
+  if(hand[0]==="7"&&hand[1]==="7"&&dealerUp==="7") results.push("JACKPOT 777");
 
   return results.length ? results.join(", ") : "—";
 }
 
-// ===== DEALER SIMULATION =====
+// ===== DEALER SIMULATION (MONTE CARLO) =====
 function buildFullShoe(visible){
-  const deck=[];
-  const suits=["H","D","C","S"];
+  const deck = [];
+  const suits = ["H","D","C","S"];
   for(let d=0; d<TOTAL_DECKS; d++){
-    RANKS.forEach(r=>suits.forEach(s=>deck.push(r)));
+    RANKS.forEach(r => suits.forEach(s => deck.push(r)));
   }
   visible.forEach(v=>{
     const idx = deck.indexOf(v);
@@ -155,24 +151,25 @@ function buildFullShoe(visible){
 
 function simulateDealer(up,hole,deck){
   const hand=[up,hole];
-  let total = handValue(hand);
+  let total=handValue(hand);
   while(total<17 || (total===17 && hand.includes("A"))){
     if(!deck.length) break;
-    const idx = Math.floor(Math.random()*deck.length);
+    const idx=Math.floor(Math.random()*deck.length);
     const card=deck.splice(idx,1)[0];
     hand.push(card);
-    total = handValue(hand);
+    total=handValue(hand);
   }
   return total;
 }
 
 function monteCarloOdds(playerHand,upcard,visible,trials=3000){
   const baseShoe = buildFullShoe(visible);
-  const counts={win:0,push:0,loss:0};
+  const counts = {win:0,push:0,loss:0};
+
   for(let t=0;t<trials;t++){
-    const deck = baseShoe.slice();
-    const holeIdx = Math.floor(Math.random()*deck.length);
-    const hole = deck.splice(holeIdx,1)[0];
+    const deck=baseShoe.slice();
+    const holeIdx=Math.floor(Math.random()*deck.length);
+    const hole=deck.splice(holeIdx,1)[0];
     const dealerTotal = simulateDealer(upcard,hole,deck);
     const playerTotal = handValue(playerHand);
 
@@ -185,37 +182,37 @@ function monteCarloOdds(playerHand,upcard,visible,trials=3000){
   return counts;
 }
 
-// ===== EVALUATE =====
+// ===== EVALUATE HAND =====
 document.getElementById("evaluate").onclick = ()=>{
   if(!seats.length || seats[0].length<2 || !dealerUpcard){
-    alert("Enter at least your 2 cards and the dealer upcard.");
+    alert("Enter your two cards and the dealer upcard before evaluating.");
     return;
   }
 
   const yourHand = seats[0];
-  const advice = basicStrategy(yourHand,dealerUpcard);
+  const advice = basicStrategy(yourHand, dealerUpcard);
   document.getElementById("strategy").textContent = advice;
 
-  const visible = [...yourHand, dealerUpcard];
+  const visible=[...yourHand, dealerUpcard];
   seats.slice(1).forEach(h=>visible.push(...h));
 
-  const odds = monteCarloOdds(yourHand,dealerUpcard,visible);
+  const odds=monteCarloOdds(yourHand,dealerUpcard,visible);
 
-  const total = odds.win + odds.push + odds.loss;
+  const total = odds.win+odds.push+odds.loss;
   document.getElementById("winPct").textContent = ((odds.win/total)*100).toFixed(1);
   document.getElementById("pushPct").textContent = ((odds.push/total)*100).toFixed(1);
   document.getElementById("lossPct").textContent = ((odds.loss/total)*100).toFixed(1);
 
   document.getElementById("evDisplay").textContent = ((odds.win - odds.loss)/total).toFixed(3);
-  document.getElementById("sideBetResults").textContent = sideBetResults(yourHand,dealerUpcard);
+  document.getElementById("sideBetResults").textContent = sideBetResults(yourHand, dealerUpcard);
 
-  historyArr.push({time:new Date().toLocaleTimeString(),yourHand,dealer:dealerUpcard,advice});
+  historyArr.push({time:new Date().toLocaleTimeString(), yourHand, dealer:dealerUpcard, advice});
   localStorage.setItem("bjHistory",JSON.stringify(historyArr));
 };
 
-// ===== COUNTS + UI =====
+// ===== COUNTS & UI =====
 function updateCounts(){
-  let count=0,remaining=0;
+  let count=0, remaining=0;
   for(let r in shoe){
     count += (hiLo[r]||0)*((4*TOTAL_DECKS)-shoe[r]);
     remaining += shoe[r];
@@ -236,16 +233,16 @@ function updateUI(){
     seatDiv.appendChild(d);
   });
 
-  document.getElementById("dealerCard").textContent = dealerUpcard || "—";
+  document.getElementById("dealerCard").textContent = dealerUpcard||"—";
 }
 
-// ===== RESET HAND (keeps shoe) =====
+// ===== RESET HAND (Keep Shoe) =====
 document.getElementById("resetHand").onclick = ()=>{
-  seats.flat().forEach(c => shoe[c]++);
+  seats.flat().forEach(c=>shoe[c]++);
   if(dealerUpcard) shoe[dealerUpcard]++;
   seats = Array.from({length:seats.length},()=>[]);
-  dealerUpcard = null;
-  cardHistory = [];
+  dealerUpcard=null;
+  cardHistory=[];
 
   document.getElementById("strategy").textContent="—";
   document.getElementById("winPct").textContent="—";
@@ -257,11 +254,33 @@ document.getElementById("resetHand").onclick = ()=>{
   updateUI(); updateCounts();
 };
 
-// ===== NEW SHOE =====
+// ===== CLEAR TABLE (Full Reset) =====
+document.getElementById("clear").onclick = ()=>{
+  seats = [];
+  dealerUpcard = null;
+  shoe = buildShoe();
+  cardHistory = [];
+  historyArr = [];
+
+  localStorage.removeItem("bjHistory");
+
+  document.getElementById("strategy").textContent="—";
+  document.getElementById("winPct").textContent="—";
+  document.getElementById("pushPct").textContent="—";
+  document.getElementById("lossPct").textContent="—";
+  document.getElementById("evDisplay").textContent="—";
+  document.getElementById("sideBetResults").textContent="—";
+
+  updateUI(); updateCounts();
+};
+
+// ===== NEW SHOE (Full Reset + Clear History) =====
 document.getElementById("newShoe").onclick = ()=>{
-  seats=[]; dealerUpcard=null;
-  shoe = buildShoe(); cardHistory=[];
-  historyArr=[];
+  seats = [];
+  dealerUpcard = null;
+  shoe = buildShoe();
+  cardHistory = [];
+  historyArr = [];
   localStorage.removeItem("bjHistory");
 
   document.getElementById("strategy").textContent="—";
