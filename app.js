@@ -1,192 +1,300 @@
-document.addEventListener("DOMContentLoaded", () => {
+// app.js
+import { normalizeCardToken, hiloValue, computeTrueCount, clamp } from "./count.js";
+import { recommendMove } from "./strategy-h17-ls.js";
 
-console.log("Blackjack Trainer Pro – Engine Loaded");
+const el = (id) => document.getElementById(id);
 
-const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
-const TOTAL_DECKS = 6;
-const hiLo = {2:1,3:1,4:1,5:1,6:1,7:0,8:0,9:0,10:-1,J:-1,Q:-1,K:-1,A:-1};
+const ui = {
+  cmd: el("cmd"),
+  rc: el("rc"),
+  dr: el("dr"),
+  tc: el("tc"),
+  dealerUp: el("dealerUp"),
+  playerHand: el("playerHand"),
+  tableCards: el("tableCards"),
+  taggedCards: el("taggedCards"),
+  advice: el("advice"),
+  adviceTag: el("adviceTag"),
+  adviceReason: el("adviceReason"),
+  peekState: el("peekState"),
 
-let seats = [[]];
-let dealerUpcard = null;
-let shoe = buildShoe();
-let cardHistory = [];
-
-let evChartInstance = null;
-
-function buildShoe(){
-  const c = {};
-  RANKS.forEach(r => c[r] = 4 * TOTAL_DECKS);
-  return c;
-}
-
-function buildFullDeck(visible){
-  const deck=[];
-  for(let d=0; d<TOTAL_DECKS; d++){
-    RANKS.forEach(r=>{
-      for(let i=0;i<4;i++) deck.push(r);
-    });
-  }
-  visible.forEach(v=>{
-    const i=deck.indexOf(v);
-    if(i>=0) deck.splice(i,1);
-  });
-  return deck;
-}
-
-function handValue(cards){
-  let total=0, aces=0;
-  cards.forEach(c=>{
-    if(["J","Q","K"].includes(c)) total+=10;
-    else if(c==="A"){ total+=11; aces++; }
-    else total+=parseInt(c);
-  });
-  while(total>21 && aces){ total-=10; aces--; }
-  return total;
-}
-
-function simulateDealer(up,hole,deck){
-  const h=[up,hole];
-  let t=handValue(h);
-  while(t<17 || (t===17 && h.includes("A"))){
-    if(!deck.length) break;
-    h.push(deck.splice(Math.floor(Math.random()*deck.length),1)[0]);
-    t=handValue(h);
-  }
-  return t;
-}
-
-function simulateOutcome(playerTotal, deck, up){
-  const hole = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
-  const dTotal = simulateDealer(up, hole, deck);
-
-  if(playerTotal>21) return -1;
-  if(dTotal>21) return 1;
-  if(playerTotal>dTotal) return 1;
-  if(playerTotal<dTotal) return -1;
-  return 0;
-}
-
-function monteCarloEV(callback, trials=2000){
-  let ev=0;
-  for(let i=0;i<trials;i++) ev += callback();
-  return ev/trials;
-}
-
-function EV_Stand(hand, visible){
-  const total = handValue(hand);
-  return monteCarloEV(()=>{
-    const deck = buildFullDeck(visible);
-    return simulateOutcome(total, deck, visible[1]);
-  });
-}
-
-function EV_Hit(hand, visible){
-  return monteCarloEV(()=>{
-    const deck = buildFullDeck(visible);
-    const card = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
-    const newHand = [...hand,card];
-    const total = handValue(newHand);
-    return simulateOutcome(total, deck, visible[1]);
-  });
-}
-
-function EV_Double(hand, visible){
-  return monteCarloEV(()=>{
-    const deck = buildFullDeck(visible);
-    const card = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
-    const total = handValue([...hand,card]);
-    const r = simulateOutcome(total, deck, visible[1]);
-    return r*2;
-  });
-}
-
-function EV_Surrender(){
-  return -0.5;
-}
-
-function EV_Split(hand, visible){
-  if(hand[0]!==hand[1]) return null;
-
-  return monteCarloEV(()=>{
-    const deck = buildFullDeck(visible);
-    let ev=0;
-
-    for(let i=0;i<2;i++){
-      const card = deck.splice(Math.floor(Math.random()*deck.length),1)[0];
-      const total = handValue([hand[0],card]);
-      ev += simulateOutcome(total, deck, visible[1]);
-    }
-    return ev;
-  });
-}
-
-function renderEVChart(values){
-  const ctx = document.getElementById("evChart").getContext("2d");
-  if(evChartInstance) evChartInstance.destroy();
-
-  evChartInstance = new Chart(ctx,{
-    type:"bar",
-    data:{
-      labels:Object.keys(values),
-      datasets:[{
-        label:"Expected Value",
-        data:Object.values(values),
-        backgroundColor:["#4caf50","#2196f3","#ff9800","#9c27b0","#f44336"]
-      }]
-    },
-    options:{ responsive:true }
-  });
-}
-
-function renderHeatmap(hand){
-  const canvas=document.getElementById("heatmap");
-  const ctx=canvas.getContext("2d");
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  const cellW=canvas.width/13;
-  const cellH=canvas.height;
-
-  RANKS.forEach((up,i)=>{
-    const visible=[...hand,up];
-    const ev=EV_Stand(hand,visible);
-
-    const color = ev>0 ? `rgba(0,200,0,${Math.min(ev,1)})` :
-                 `rgba(200,0,0,${Math.min(Math.abs(ev),1)})`;
-
-    ctx.fillStyle=color;
-    ctx.fillRect(i*cellW,0,cellW,cellH);
-    ctx.fillStyle="#000";
-    ctx.fillText(up,i*cellW+cellW/2-4,20);
-  });
-}
-
-document.getElementById("evaluate").onclick = ()=>{
-  if(!dealerUpcard || seats[0].length<2) return alert("Enter your hand & dealer upcard");
-
-  const yourHand = seats[0];
-  const visible=[...yourHand,dealerUpcard];
-
-  const evStand = EV_Stand(yourHand,visible);
-  const evHit = EV_Hit(yourHand,visible);
-  const evDouble = EV_Double(yourHand,visible);
-  const evSplit = EV_Split(yourHand,visible);
-  const evSurrender = EV_Surrender();
-
-  document.getElementById("evStand").textContent = evStand.toFixed(3);
-  document.getElementById("evHit").textContent = evHit.toFixed(3);
-  document.getElementById("evDouble").textContent = evDouble.toFixed(3);
-  document.getElementById("evSplit").textContent = evSplit===null?"N/A":evSplit.toFixed(3);
-  document.getElementById("evSurrender").textContent = evSurrender.toFixed(3);
-
-  renderEVChart({
-    Stand:evStand,
-    Hit:evHit,
-    Double:evDouble,
-    Split:evSplit===null?0:evSplit,
-    Surrender:evSurrender
-  });
-
-  renderHeatmap(yourHand);
+  btnNewRound: el("btnNewRound"),
+  btnUndo: el("btnUndo"),
+  btnShoe: el("btnShoe"),
+  btnClear: el("btnClear"),
 };
 
+const state = {
+  rules: {
+    decks: 6,
+    dealerHitsSoft17: true,
+    lateSurrender: true,
+    doubleAfterSplit: true,
+    dealerPeeks: true,
+    peekResolved: true
+  },
+  runningCount: 0,
+  decksRemaining: 6.0,
+
+  round: {
+    table: [],
+    player: [],
+    dealerUp: null,
+    log: [] // for undo, each entry includes kind and countDelta
+  }
+};
+
+// ---------- Core actions ----------
+
+function startNewRound() {
+  state.round = { table: [], player: [], dealerUp: null, log: [] };
+  render();
+}
+
+function startNewShoe(decks = 6) {
+  state.rules.decks = decks;
+  state.decksRemaining = Number(decks);
+  state.runningCount = 0;
+  startNewRound();
+}
+
+function clearAll() {
+  startNewShoe(state.rules.decks);
+  ui.cmd.value = "";
+}
+
+function undoLast() {
+  const last = state.round.log.pop();
+  if (!last) return;
+
+  state.runningCount -= last.countDelta;
+
+  if (last.kind === "TABLE") state.round.table.pop();
+  if (last.kind === "P") state.round.player.pop();
+  if (last.kind === "DUP") state.round.dealerUp = last.prevDealerUp ?? null;
+
+  render();
+}
+
+function setPenetrationUsed(percentUsed) {
+  const used = clamp(Number(percentUsed) / 100, 0, 0.95);
+  state.decksRemaining = Math.max(0.25, state.rules.decks * (1 - used));
+}
+
+function setDecksRemaining(dr) {
+  const v = Number(dr);
+  if (!Number.isFinite(v) || v <= 0) return;
+  state.decksRemaining = Math.max(0.25, v);
+}
+
+function setPeekResolved(on) {
+  state.rules.peekResolved = !!on;
+  render();
+}
+
+// ---------- Parsing ----------
+
+function tokenize(line) {
+  return line
+    .replace(/,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+}
+
+// Mode: TABLE (default), P (player), DUP (dealer up)
+function processLine(line) {
+  const raw = tokenize(line);
+  if (!raw.length) return;
+
+  let mode = "TABLE";
+
+  for (let i = 0; i < raw.length; i++) {
+    const t = raw[i];
+
+    // Commands
+    const lower = t.toLowerCase();
+
+    if (lower === "n") { startNewRound(); continue; }
+    if (lower === "undo") { undoLast(); continue; }
+
+    if (lower === "shoe") {
+      const n = Number(raw[i + 1]);
+      if (Number.isFinite(n) && n > 0) { startNewShoe(n); i++; }
+      continue;
+    }
+
+    if (lower === "pen") {
+      const p = Number(raw[i + 1]);
+      if (Number.isFinite(p)) { setPenetrationUsed(p); i++; }
+      continue;
+    }
+
+    if (lower === "dr") {
+      const d = Number(raw[i + 1]);
+      if (Number.isFinite(d)) { setDecksRemaining(d); i++; }
+      continue;
+    }
+
+    if (lower === "peek") {
+      const v = (raw[i + 1] || "").toLowerCase();
+      if (v === "on") { setPeekResolved(true); i++; }
+      if (v === "off") { setPeekResolved(false); i++; }
+      continue;
+    }
+
+    if (lower === "reveal") {
+      // After "reveal", treat subsequent tokens as TABLE exposures (count-only).
+      mode = "TABLE";
+      continue;
+    }
+
+    // Prefix switches like "p:" or "d:"
+    if (t.endsWith(":")) {
+      const pref = t.slice(0, -1).toLowerCase();
+      if (pref === "p") mode = "P";
+      if (pref === "d") mode = "DUP";
+      continue;
+    }
+
+    // Inline prefixes like "p:A" or "d:6"
+    if (t.includes(":")) {
+      const [prefRaw, valRaw] = t.split(":");
+      const pref = (prefRaw || "").toLowerCase();
+      const val = normalizeCardToken(valRaw);
+      if (!val) continue;
+
+      if (pref === "p") mode = "P";
+      if (pref === "d") mode = "DUP";
+
+      // Process the val in the selected mode
+      applyCard(val, mode);
+      // After dealer upcard, return to TABLE for speed
+      if (mode === "DUP") mode = "TABLE";
+      continue;
+    }
+
+    // Card token
+    const card = normalizeCardToken(t);
+    if (!card) continue;
+
+    applyCard(card, mode);
+    if (mode === "DUP") mode = "TABLE";
+  }
+
+  render();
+}
+
+function applyCard(card, mode) {
+  const delta = hiloValue(card);
+
+  if (mode === "TABLE") {
+    state.round.table.push(card);
+    state.runningCount += delta;
+    state.round.log.push({ kind: "TABLE", card, countDelta: delta });
+    return;
+  }
+
+  if (mode === "P") {
+    state.round.player.push(card);
+    state.runningCount += delta;
+    state.round.log.push({ kind: "P", card, countDelta: delta });
+    return;
+  }
+
+  if (mode === "DUP") {
+    const prev = state.round.dealerUp;
+    state.round.dealerUp = card;
+    state.runningCount += delta;
+    state.round.log.push({ kind: "DUP", card, prevDealerUp: prev, countDelta: delta });
+    return;
+  }
+}
+
+// ---------- Rendering ----------
+
+function render() {
+  const tc = computeTrueCount(state.runningCount, state.decksRemaining);
+
+  ui.rc.textContent = String(state.runningCount);
+  ui.dr.textContent = state.decksRemaining.toFixed(1);
+  ui.tc.textContent = tc.toFixed(1);
+
+  ui.dealerUp.textContent = state.round.dealerUp ? String(state.round.dealerUp) : "—";
+  ui.playerHand.textContent = state.round.player.length ? state.round.player.join(" ") : "—";
+
+  ui.peekState.textContent = state.rules.peekResolved ? "ON" : "OFF";
+
+  ui.tableCards.textContent = state.round.table.length ? state.round.table.join(" ") : "—";
+  ui.taggedCards.textContent = buildTaggedText();
+
+  const adviceObj = getAdvice();
+  ui.advice.textContent = adviceObj.action ?? "—";
+  ui.adviceTag.textContent = adviceObj.tag;
+  ui.adviceReason.textContent = adviceObj.reasonText;
+}
+
+function buildTaggedText() {
+  const parts = [];
+  if (state.round.dealerUp) parts.push(`d:${state.round.dealerUp}`);
+  if (state.round.player.length) parts.push(`p:${state.round.player.join(" ")}`);
+  return parts.length ? parts.join("  ") : "—";
+}
+
+function getAdvice() {
+  const p = state.round.player;
+  const d = state.round.dealerUp;
+
+  if (!d || p.length < 2) {
+    return { action: null, tag: "BASIC", reasonText: "Enter p: and d: to get advice." };
+  }
+
+  const res = recommendMove(p, d, {
+    dealerHitsSoft17: state.rules.dealerHitsSoft17,
+    lateSurrender: state.rules.lateSurrender,
+    doubleAfterSplit: state.rules.doubleAfterSplit,
+    dealerPeeks: state.rules.dealerPeeks,
+    peekResolved: state.rules.peekResolved
+  });
+
+  let action = res.action;
+  if (!action) return { action: null, tag: "BASIC", reasonText: res.reason || "No advice." };
+
+  const pretty = actionPretty(action);
+  const tag = "BASIC";
+  const extra = res.note ? ` ${res.note}` : "";
+  return { action: pretty, tag, reasonText: `${res.reason || "Strategy."}${extra}` };
+}
+
+function actionPretty(a) {
+  if (a === "SUR") return "SURRENDER";
+  if (a === "SPLIT") return "SPLIT";
+  if (a === "DOUBLE") return "DOUBLE";
+  if (a === "HIT") return "HIT";
+  if (a === "STAND") return "STAND";
+  return a;
+}
+
+// ---------- Events ----------
+
+ui.cmd.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const line = ui.cmd.value.trim();
+    if (!line) return;
+    processLine(line);
+    ui.cmd.value = "";
+  }
 });
+
+ui.btnNewRound.addEventListener("click", () => startNewRound());
+ui.btnUndo.addEventListener("click", () => undoLast());
+ui.btnShoe.addEventListener("click", () => startNewShoe(6));
+ui.btnClear.addEventListener("click", () => clearAll());
+
+// Autofocus command box
+ui.cmd.focus();
+
+// Initial render
+render();
