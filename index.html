@@ -1,53 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Blackjack Trainer Pro</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
-    h1 { color: #1a237e; }
-    button { margin: 0.2rem; padding: 0.5rem 1rem; font-size: 1rem; }
-    .section { margin-top: 2rem; padding: 1rem; background: white; border-radius: 5px; }
-    canvas { max-width: 100%; margin-top: 1rem; }
-    .ev-table td { padding: 0.5rem; }
-    .ev-table td:first-child { font-weight: bold; }
-  </style>
+  <meta charset="utf-8" />
+  <title>Blackjack Counter + H17 LS Advisor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">BJ</div>
+      <div class="title">
+        <div class="name">Blackjack Counter</div>
+        <div class="subtitle">6D · H17 · DAS · Late Surrender · Dealer peeks</div>
+      </div>
+    </div>
 
-  <h1>Blackjack Trainer Pro</h1>
+    <div class="metrics" aria-label="Count metrics">
+      <div class="metric">
+        <div class="label">RC</div>
+        <div id="rc" class="value">0</div>
+      </div>
+      <div class="metric">
+        <div class="label">DR</div>
+        <div id="dr" class="value">6.0</div>
+      </div>
+      <div class="metric">
+        <div class="label">TC</div>
+        <div id="tc" class="value">0.0</div>
+      </div>
+    </div>
+  </header>
 
-  <div class="section">
-    <h2>Tap Cards</h2>
-    <div id="cardButtons"></div>
-    <p>Dealer Upcard: <span id="dealerCard">—</span></p>
-    <div id="seats"></div>
+  <main class="layout">
+    <section class="card">
+      <h1>Fast Card Entry</h1>
+      <p class="muted">
+        Type cards as values: <b>A 2 3 4 5 6 7 8 9 T</b> (use <b>0</b> for T).
+        Tag only what matters: <b>p:</b> for your cards, <b>d:</b> for dealer upcard.
+        Everything else is count-only.
+      </p>
 
-    <button id="undo">Undo</button>
-    <button id="addSeat">Add Player</button>
-    <button id="removeSeat">Remove Player</button>
-    <button id="evaluate">Evaluate</button>
-  </div>
+      <div class="grid">
+        <div class="field">
+          <label for="cmd">Command box</label>
+          <input id="cmd" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+                 placeholder='Example: shoe 6   n   9 7 d:6 p:A 7   (then hit cards)   reveal T 5'
+          />
+          <div class="hint">
+            Commands: <b>shoe 6</b>, <b>n</b>, <b>undo</b>, <b>pen 65</b>, <b>dr 3.5</b>, <b>peek on/off</b>, <b>reveal</b>
+          </div>
+        </div>
 
-  <div class="section">
-    <h2>EV Comparison</h2>
-    <table class="ev-table">
-      <tr><td>Stand</td><td id="evStand">—</td></tr>
-      <tr><td>Hit</td><td id="evHit">—</td></tr>
-      <tr><td>Double</td><td id="evDouble">—</td></tr>
-      <tr><td>Split</td><td id="evSplit">—</td></tr>
-      <tr><td>Surrender</td><td id="evSurrender">—</td></tr>
-    </table>
+        <div class="field">
+          <label>Quick actions</label>
+          <div class="btnrow">
+            <button id="btnNewRound" class="btn">New round (n)</button>
+            <button id="btnUndo" class="btn">Undo</button>
+            <button id="btnShoe" class="btn">New shoe (shoe 6)</button>
+            <button id="btnClear" class="btn danger">Clear log</button>
+          </div>
+          <div class="hint">
+            Tip: keep your cursor in the box, type cards separated by spaces. Press Enter to process.
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <canvas id="evChart" width="600" height="300"></canvas>
-  </div>
+    <section class="card">
+      <h2>Live State</h2>
+      <div class="live">
+        <div class="liveblock">
+          <div class="label">Dealer upcard</div>
+          <div id="dealerUp" class="pill">—</div>
+        </div>
+        <div class="liveblock">
+          <div class="label">Your hand</div>
+          <div id="playerHand" class="pill">—</div>
+        </div>
+        <div class="liveblock">
+          <div class="label">Peek resolved</div>
+          <div id="peekState" class="pill">ON</div>
+        </div>
+      </div>
 
-  <div class="section">
-    <h2>Heatmap: EV vs Dealer Upcards</h2>
-    <canvas id="heatmap" width="780" height="50"></canvas>
-  </div>
+      <div class="advisor">
+        <div class="advisor-head">
+          <div>
+            <div class="label">Recommended move</div>
+            <div id="advice" class="advice">—</div>
+          </div>
+          <div id="adviceTag" class="tag">BASIC</div>
+        </div>
+        <div id="adviceReason" class="muted">Enter p: and d: to get advice.</div>
+      </div>
+    </section>
 
-  <script src="app.js"></script>
+    <section class="card">
+      <h2>Exposure Log</h2>
+      <p class="muted">This is what you have recorded in the current round.</p>
+      <div class="loggrid">
+        <div>
+          <div class="label">Count-only exposures</div>
+          <div id="tableCards" class="logbox">—</div>
+        </div>
+        <div>
+          <div class="label">Tagged (you + dealer)</div>
+          <div id="taggedCards" class="logbox">—</div>
+        </div>
+      </div>
+
+      <details class="details">
+        <summary>Keyboard notes</summary>
+        <ul>
+          <li><b>Enter</b> processes whatever you typed</li>
+          <li><b>undo</b> undoes the last recorded token</li>
+          <li>Use <b>pen 65</b> to set shoe used to 65% (updates decks remaining)</li>
+          <li>Use <b>dr 3.5</b> to set decks remaining directly</li>
+          <li>Use <b>peek off</b> if dealer peek has not happened yet on A or T</li>
+        </ul>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="muted">
+      This tool provides basic strategy advice for the configured rules. It does not guarantee outcomes.
+    </div>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
