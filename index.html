@@ -2,170 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Blackjack Counter + H17 LS Advisor</title>
+  <title>Blackjack Counter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">BJ</div>
-      <div class="title">
-        <div class="name">Blackjack Counter</div>
-        <div class="subtitle">6D · H17 · DAS · Late Surrender · Dealer peeks</div>
-      </div>
-    </div>
 
-    <div class="metrics" aria-label="Count metrics">
-      <div class="metric">
-        <div class="label">RC</div>
-        <div id="rc" class="value">0</div>
-      </div>
-      <div class="metric">
-        <div class="label">DR</div>
-        <div id="dr" class="value">6.0</div>
-      </div>
-      <div class="metric">
-        <div class="label">TC</div>
-        <div id="tc" class="value">0.0</div>
-      </div>
-    </div>
-  </header>
+<header class="topbar">
+  <div class="title">Blackjack Counter</div>
+  <div class="counts">
+    <div>RC: <span id="rc">0</span></div>
+    <div>TC: <span id="tc">0.0</span></div>
+    <div>DR: <span id="dr">6.0</span></div>
+  </div>
+</header>
 
-  <main class="layout">
-    <section class="card">
-      <h1>Fast Card Entry</h1>
-      <p class="muted">
-        Fastest method is the button pad below. You can still type in the command box if needed.
-        Values: <b>A 2 3 4 5 6 7 8 9 T</b> (T = 10/J/Q/K).
-      </p>
+<main>
 
-      <div class="grid">
-        <div class="field">
-          <label for="cmd">Command box (optional)</label>
-          <input id="cmd" type="text" inputmode="text" autocomplete="off" spellcheck="false"
-            placeholder='Examples: shoe 6 | n | 9 7 d:6 p:A 7 | pen 65 | dr 3.5 | peek off | undo'
-          />
-          <div class="hint">
-            Commands: <b>shoe 6</b>, <b>n</b>, <b>undo</b>, <b>pen 65</b>, <b>dr 3.5</b>, <b>peek on/off</b>
-          </div>
-        </div>
+<section class="panel">
+  <h2>Tag Mode</h2>
+  <div class="tag-row">
+    <button data-tag="table" class="tag active">Table</button>
+    <button data-tag="player" class="tag">Me</button>
+    <button data-tag="dealer" class="tag">Dealer Up</button>
+  </div>
+</section>
 
-        <div class="field">
-          <label>Quick actions</label>
-          <div class="btnrow">
-            <button id="btnNewRound" class="btn" type="button">New round</button>
-            <button id="btnUndo" class="btn" type="button">Undo</button>
-            <button id="btnShoe" class="btn" type="button">New shoe</button>
-            <button id="btnClear" class="btn danger" type="button">Clear all</button>
-          </div>
-          <div class="hint">
-            Tip: you can do everything with the pad and toggles, no typing required.
-          </div>
-        </div>
-      </div>
+<section class="panel">
+  <h2>Tap Cards</h2>
+  <div class="pad">
+    <button data-card="A">A</button>
+    <button data-card="2">2</button>
+    <button data-card="3">3</button>
+    <button data-card="4">4</button>
+    <button data-card="5">5</button>
+    <button data-card="6">6</button>
+    <button data-card="7">7</button>
+    <button data-card="8">8</button>
+    <button data-card="9">9</button>
+    <button data-card="T">10</button>
+  </div>
+</section>
 
-      <div class="pad">
-        <div class="pad-head">
-          <div class="pad-title">Tap to log cards</div>
+<section class="panel">
+  <div class="controls">
+    <button id="newRound">New Round</button>
+    <button id="newShoe">New Shoe</button>
+    <button id="undo">Undo</button>
+  </div>
+</section>
 
-          <div class="toggles">
-            <button id="tagTable" class="tbtn active" type="button">Table</button>
-            <button id="tagPlayer" class="tbtn" type="button">Me (p:)</button>
-            <button id="tagDealer" class="tbtn" type="button">Dealer Up (d:)</button>
-          </div>
+<section class="panel state">
+  <div>Dealer: <span id="dealer">—</span></div>
+  <div>You: <span id="player">—</span></div>
+  <div class="move">
+    Move: <strong id="move">—</strong>
+  </div>
+</section>
 
-          <div class="toggles">
-            <button id="btnPeek" class="tbtn active" type="button">Peek: ON</button>
-            <button id="btnPen" class="tbtn" type="button">Pen: 0%</button>
-            <button id="btnDR" class="tbtn" type="button">DR: 6.0</button>
-          </div>
-        </div>
+</main>
 
-        <div class="rankpad" aria-label="Card rank pad">
-          <button class="rbtn" data-card="A" type="button">A</button>
-          <button class="rbtn" data-card="2" type="button">2</button>
-          <button class="rbtn" data-card="3" type="button">3</button>
-          <button class="rbtn" data-card="4" type="button">4</button>
-          <button class="rbtn" data-card="5" type="button">5</button>
-          <button class="rbtn" data-card="6" type="button">6</button>
-          <button class="rbtn" data-card="7" type="button">7</button>
-          <button class="rbtn" data-card="8" type="button">8</button>
-          <button class="rbtn" data-card="9" type="button">9</button>
-          <button class="rbtn" data-card="T" type="button">T</button>
-        </div>
-
-        <div class="pad-foot">
-          <button id="btnModeReset" class="btn small" type="button">Reset tag to Table</button>
-          <button id="btnN" class="btn small" type="button">New round</button>
-          <button id="btnShoe6" class="btn small" type="button">Shoe 6</button>
-          <button id="btnUndo2" class="btn small" type="button">Undo</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Live State</h2>
-      <div class="live">
-        <div class="liveblock">
-          <div class="label">Dealer upcard</div>
-          <div id="dealerUp" class="pill">—</div>
-        </div>
-        <div class="liveblock">
-          <div class="label">Your hand</div>
-          <div id="playerHand" class="pill">—</div>
-        </div>
-        <div class="liveblock">
-          <div class="label">Peek resolved</div>
-          <div id="peekState" class="pill">ON</div>
-        </div>
-      </div>
-
-      <div class="advisor">
-        <div class="advisor-head">
-          <div>
-            <div class="label">Recommended move</div>
-            <div id="advice" class="advice">—</div>
-          </div>
-          <div id="adviceTag" class="tag">BASIC</div>
-        </div>
-        <div id="adviceReason" class="muted">Enter p: and d: to get advice.</div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Exposure Log</h2>
-      <p class="muted">Current round card exposures. Untagged cards are count-only.</p>
-
-      <div class="loggrid">
-        <div>
-          <div class="label">Count-only exposures</div>
-          <div id="tableCards" class="logbox">—</div>
-        </div>
-        <div>
-          <div class="label">Tagged (you + dealer)</div>
-          <div id="taggedCards" class="logbox">—</div>
-        </div>
-      </div>
-
-      <details class="details">
-        <summary>Notes</summary>
-        <ul>
-          <li>Use <b>Dealer Up</b> toggle, then tap one card, it returns to Table automatically.</li>
-          <li>Use <b>Peek: ON/OFF</b> if dealer peek has not happened yet when upcard is A or T.</li>
-          <li>Use <b>Pen</b> to step penetration used by 5%.</li>
-          <li>Use <b>DR</b> to step decks remaining by 0.5.</li>
-        </ul>
-      </details>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <div class="muted">
-      This tool provides basic strategy advice for the configured rules. It does not guarantee outcomes.
-    </div>
-  </footer>
-
-  <script type="module" src="./app.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
