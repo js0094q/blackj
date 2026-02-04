@@ -36,33 +36,70 @@
     <section class="card">
       <h1>Fast Card Entry</h1>
       <p class="muted">
-        Type cards as values: <b>A 2 3 4 5 6 7 8 9 T</b> (use <b>0</b> for T).
-        Tag only what matters: <b>p:</b> for your cards, <b>d:</b> for dealer upcard.
-        Everything else is count-only.
+        Fastest method is the button pad below. You can still type in the command box if needed.
+        Values: <b>A 2 3 4 5 6 7 8 9 T</b> (T = 10/J/Q/K).
       </p>
 
       <div class="grid">
         <div class="field">
-          <label for="cmd">Command box</label>
+          <label for="cmd">Command box (optional)</label>
           <input id="cmd" type="text" inputmode="text" autocomplete="off" spellcheck="false"
-                 placeholder='Example: shoe 6   n   9 7 d:6 p:A 7   (then hit cards)   reveal T 5'
+            placeholder='Examples: shoe 6 | n | 9 7 d:6 p:A 7 | pen 65 | dr 3.5 | peek off | undo'
           />
           <div class="hint">
-            Commands: <b>shoe 6</b>, <b>n</b>, <b>undo</b>, <b>pen 65</b>, <b>dr 3.5</b>, <b>peek on/off</b>, <b>reveal</b>
+            Commands: <b>shoe 6</b>, <b>n</b>, <b>undo</b>, <b>pen 65</b>, <b>dr 3.5</b>, <b>peek on/off</b>
           </div>
         </div>
 
         <div class="field">
           <label>Quick actions</label>
           <div class="btnrow">
-            <button id="btnNewRound" class="btn">New round (n)</button>
-            <button id="btnUndo" class="btn">Undo</button>
-            <button id="btnShoe" class="btn">New shoe (shoe 6)</button>
-            <button id="btnClear" class="btn danger">Clear log</button>
+            <button id="btnNewRound" class="btn" type="button">New round</button>
+            <button id="btnUndo" class="btn" type="button">Undo</button>
+            <button id="btnShoe" class="btn" type="button">New shoe</button>
+            <button id="btnClear" class="btn danger" type="button">Clear all</button>
           </div>
           <div class="hint">
-            Tip: keep your cursor in the box, type cards separated by spaces. Press Enter to process.
+            Tip: you can do everything with the pad and toggles, no typing required.
           </div>
+        </div>
+      </div>
+
+      <div class="pad">
+        <div class="pad-head">
+          <div class="pad-title">Tap to log cards</div>
+
+          <div class="toggles">
+            <button id="tagTable" class="tbtn active" type="button">Table</button>
+            <button id="tagPlayer" class="tbtn" type="button">Me (p:)</button>
+            <button id="tagDealer" class="tbtn" type="button">Dealer Up (d:)</button>
+          </div>
+
+          <div class="toggles">
+            <button id="btnPeek" class="tbtn active" type="button">Peek: ON</button>
+            <button id="btnPen" class="tbtn" type="button">Pen: 0%</button>
+            <button id="btnDR" class="tbtn" type="button">DR: 6.0</button>
+          </div>
+        </div>
+
+        <div class="rankpad" aria-label="Card rank pad">
+          <button class="rbtn" data-card="A" type="button">A</button>
+          <button class="rbtn" data-card="2" type="button">2</button>
+          <button class="rbtn" data-card="3" type="button">3</button>
+          <button class="rbtn" data-card="4" type="button">4</button>
+          <button class="rbtn" data-card="5" type="button">5</button>
+          <button class="rbtn" data-card="6" type="button">6</button>
+          <button class="rbtn" data-card="7" type="button">7</button>
+          <button class="rbtn" data-card="8" type="button">8</button>
+          <button class="rbtn" data-card="9" type="button">9</button>
+          <button class="rbtn" data-card="T" type="button">T</button>
+        </div>
+
+        <div class="pad-foot">
+          <button id="btnModeReset" class="btn small" type="button">Reset tag to Table</button>
+          <button id="btnN" class="btn small" type="button">New round</button>
+          <button id="btnShoe6" class="btn small" type="button">Shoe 6</button>
+          <button id="btnUndo2" class="btn small" type="button">Undo</button>
         </div>
       </div>
     </section>
@@ -98,7 +135,8 @@
 
     <section class="card">
       <h2>Exposure Log</h2>
-      <p class="muted">This is what you have recorded in the current round.</p>
+      <p class="muted">Current round card exposures. Untagged cards are count-only.</p>
+
       <div class="loggrid">
         <div>
           <div class="label">Count-only exposures</div>
@@ -111,13 +149,12 @@
       </div>
 
       <details class="details">
-        <summary>Keyboard notes</summary>
+        <summary>Notes</summary>
         <ul>
-          <li><b>Enter</b> processes whatever you typed</li>
-          <li><b>undo</b> undoes the last recorded token</li>
-          <li>Use <b>pen 65</b> to set shoe used to 65% (updates decks remaining)</li>
-          <li>Use <b>dr 3.5</b> to set decks remaining directly</li>
-          <li>Use <b>peek off</b> if dealer peek has not happened yet on A or T</li>
+          <li>Use <b>Dealer Up</b> toggle, then tap one card, it returns to Table automatically.</li>
+          <li>Use <b>Peek: ON/OFF</b> if dealer peek has not happened yet when upcard is A or T.</li>
+          <li>Use <b>Pen</b> to step penetration used by 5%.</li>
+          <li>Use <b>DR</b> to step decks remaining by 0.5.</li>
         </ul>
       </details>
     </section>
