@@ -1,234 +1,106 @@
 // strategy-h17-ls.js
-// Basic Strategy for 6 decks, H17, DAS, Late Surrender, dealer peeks.
-// Output actions: "SUR" | "SPLIT" | "DOUBLE" | "HIT" | "STAND"
-
 export function recommendMove(playerCards, dealerUp, opts = {}) {
   const rules = {
-    dealerHitsSoft17: true,   // H17
+    dealerHitsSoft17: true,
     lateSurrender: true,
-    doubleAfterSplit: true,   // DAS
+    doubleAfterSplit: true,
     dealerPeeks: true,
-    peekResolved: true,       // set false until BJ check completes on A/T
+    peekResolved: true,
     ...opts
   };
 
   if (!dealerUp || !playerCards || playerCards.length < 2) {
-    return { action: null, reason: "Need dealer upcard and at least 2 player cards." };
+    return { action: null, reason: "Need dealer upcard and 2 player cards." };
   }
 
   const up = normRank(dealerUp);
   const hand = analyzeHand(playerCards);
 
-  // If dealer peek is pending and upcard is A or T, late surrender is not available yet.
-  if (rules.dealerPeeks && !rules.peekResolved && (up === "A" || up === "T")) {
-    const nonSurrender = recommendWithoutSurrender(hand, up, rules);
-    return { ...nonSurrender, note: "Dealer peek pending, surrender not available yet." };
-  }
-
-  // 1) Late surrender (only on first two cards)
+  // Late surrender on first two cards
   const canSurrender = rules.lateSurrender && playerCards.length === 2;
   if (canSurrender && shouldLateSurrender_H17_6D(hand, up)) {
     return { action: "SUR", reason: "Late surrender (6D H17)." };
   }
 
-  // 2) Split
+  // Split logic
   if (hand.isPair) {
     const split = splitDecision(hand.pairRank, up, rules);
-    if (split === "SPLIT") return { action: "SPLIT", reason: "Pair splitting chart." };
+    if (split === "SPLIT") return { action: "SPLIT", reason: "Pair splitting." };
   }
 
-  // 3) Double
+  // Double logic
   const dbl = doubleDecision(hand, up, rules);
-  if (dbl === "DOUBLE") return { action: "DOUBLE", reason: "Doubling chart." };
+  if (dbl === "DOUBLE") return { action: "DOUBLE", reason: "Doubling." };
 
-  // 4) Hit/Stand
+  // Hit/Stand logic
   const hs = hitStandDecision(hand, up);
-  return { action: hs, reason: "Hit/stand chart." };
+  return { action: hs, reason: "Basic Strategy." };
 }
 
-function recommendWithoutSurrender(hand, dealerUp, rules) {
-  if (hand.isPair) {
-    const split = splitDecision(hand.pairRank, dealerUp, rules);
-    if (split === "SPLIT") return { action: "SPLIT", reason: "Pair splitting chart." };
-  }
-  const dbl = doubleDecision(hand, dealerUp, rules);
-  if (dbl === "DOUBLE") return { action: "DOUBLE", reason: "Doubling chart." };
-  const hs = hitStandDecision(hand, dealerUp);
-  return { action: hs, reason: "Hit/stand chart." };
-}
-
-/*
-  Late Surrender: common for 6D H17 LS with peek
-  - 16 vs 9,10,A
-  - 15 vs 10,A
-  - 17 vs A
-  - 8,8 vs A (common in many H17 LS charts)
-*/
 function shouldLateSurrender_H17_6D(hand, dealerUp) {
   if (hand.isSoft) return false;
-
   if (hand.isPair && hand.pairRank === 8 && dealerUp === "A") return true;
-
   const t = hand.hardTotal;
-
   if (t === 17 && dealerUp === "A") return true;
   if (t === 16 && (dealerUp === 9 || dealerUp === "T" || dealerUp === "A")) return true;
   if (t === 15 && (dealerUp === "T" || dealerUp === "A")) return true;
-
   return false;
 }
 
-function splitDecision(pairRank, dealerUp, rules) {
-  const up = dealerUp;
-
-  if (pairRank === 11) return "SPLIT"; // A,A
-  if (pairRank === 8) return "SPLIT";  // 8,8 (surrender handled earlier for vs A)
-
-  if (pairRank === 5) return "HIT";    // treat as 10
-  if (pairRank === 10) return "HIT";   // never split 10s baseline
-
-  if (pairRank === 2 || pairRank === 3) {
-    if (isUpIn(up, [2,3,4,5,6,7])) return "SPLIT";
-    return "HIT";
-  }
-
-  if (pairRank === 4) {
-    if (rules.doubleAfterSplit && isUpIn(up, [5,6])) return "SPLIT";
-    return "HIT";
-  }
-
-  if (pairRank === 6) {
-    if (isUpIn(up, [2,3,4,5,6])) return "SPLIT";
-    return "HIT";
-  }
-
-  if (pairRank === 7) {
-    if (isUpIn(up, [2,3,4,5,6,7])) return "SPLIT";
-    return "HIT";
-  }
-
-  if (pairRank === 9) {
-    if (isUpIn(up, [2,3,4,5,6,8,9])) return "SPLIT";
-    return "STAND";
-  }
-
-  return "HIT";
+function splitDecision(pairRank, up, rules) {
+  if (pairRank === 11 || pairRank === 8) return "SPLIT";
+  if (pairRank === 5 || pairRank === 10) return "HIT";
+  if ((pairRank === 2 || pairRank === 3) && isUpIn(up, [2,3,4,5,6,7])) return "SPLIT";
+  if (pairRank === 4 && rules.doubleAfterSplit && isUpIn(up, [5,6])) return "SPLIT";
+  if (pairRank === 6 && isUpIn(up, [2,3,4,5,6])) return "SPLIT";
+  if (pairRank === 7 && isUpIn(up, [2,3,4,5,6,7])) return "SPLIT";
+  if (pairRank === 9 && isUpIn(up, [2,3,4,5,6,8,9])) return "SPLIT";
+  return pairRank === 9 ? "STAND" : "HIT";
 }
 
-function doubleDecision(hand, dealerUp, rules) {
-  const up = dealerUp;
-
+function doubleDecision(hand, up, rules) {
   if (hand.isSoft) {
     const s = hand.softTotal;
-
-    if (s === 13 || s === 14) return isUpIn(up, [5,6]) ? "DOUBLE" : null;
-    if (s === 15 || s === 16) return isUpIn(up, [4,5,6]) ? "DOUBLE" : null;
-    if (s === 17) return isUpIn(up, [3,4,5,6]) ? "DOUBLE" : null;
-    if (s === 18) return isUpIn(up, [3,4,5,6]) ? "DOUBLE" : null;
-
+    if ((s === 13 || s === 14) && isUpIn(up, [5,6])) return "DOUBLE";
+    if ((s === 15 || s === 16) && isUpIn(up, [4,5,6])) return "DOUBLE";
+    if ((s === 17 || s === 18) && isUpIn(up, [3,4,5,6])) return "DOUBLE";
     return null;
   }
-
   const t = hand.hardTotal;
-
-  if (t === 9) return isUpIn(up, [3,4,5,6]) ? "DOUBLE" : null;
-  if (t === 10) return isUpIn(up, [2,3,4,5,6,7,8,9]) ? "DOUBLE" : null;
-
-  // Conservative 11 vs A in H17, since some charts vary. You can relax later.
-  if (t === 11) return up !== "A" ? "DOUBLE" : null;
-
+  if (t === 9 && isUpIn(up, [3,4,5,6])) return "DOUBLE";
+  if (t === 10 && isUpIn(up, [2,3,4,5,6,7,8,9])) return "DOUBLE";
+  if (t === 11 && up !== "A") return "DOUBLE";
   return null;
 }
 
-function hitStandDecision(hand, dealerUp) {
-  const up = dealerUp;
-
-  if (hand.isSoft) {
-    const s = hand.softTotal;
-
-    if (s >= 19) return "STAND";
-
-    if (s === 18) {
-      if (isUpIn(up, [2,7,8])) return "STAND";
-      return "HIT";
-    }
-
-    return "HIT";
-  }
-
+function hitStandDecision(hand, up) {
+  if (hand.isSoft) return hand.softTotal >= 19 || (hand.softTotal === 18 && isUpIn(up, [2,7,8])) ? "STAND" : "HIT";
   const t = hand.hardTotal;
-
   if (t >= 17) return "STAND";
   if (t >= 13 && t <= 16) return isUpIn(up, [2,3,4,5,6]) ? "STAND" : "HIT";
   if (t === 12) return isUpIn(up, [4,5,6]) ? "STAND" : "HIT";
-
   return "HIT";
 }
-
-/* Hand analysis */
 
 function analyzeHand(cards) {
   const ranks = cards.map(normRank);
   const vals = ranks.map(rankValue);
-
   const isPair = ranks.length === 2 && ranks[0] === ranks[1];
   const pairRank = isPair ? pairRankValue(ranks[0]) : null;
-
-  const totals = computeTotals(vals, ranks);
-  const best = bestTotal(totals);
-
-  const hasAce = ranks.includes("A");
   const hardTotal = vals.reduce((a, b) => a + b, 0);
-
-  // Soft if there is an ace and we can count at least one ace as 11 without busting
-  const bestWithAceAs11 = totals.some(t => t <= 21 && t !== hardTotal);
-  const isSoft = hasAce && bestWithAceAs11;
-
-  return {
-    ranks,
-    isPair,
-    pairRank,
-    hardTotal,
-    isSoft,
-    softTotal: best
-  };
-}
-
-function computeTotals(vals, ranks) {
-  let total = vals.reduce((a, b) => a + b, 0);
+  const hasAce = ranks.includes("A");
+  const totals = [hardTotal];
   const aceCount = ranks.filter(r => r === "A").length;
-
-  const totals = [total];
-  for (let i = 1; i <= aceCount; i++) totals.push(total + i * 10);
-  return totals;
-}
-
-function bestTotal(totals) {
-  const under = totals.filter(t => t <= 21);
-  if (under.length) return Math.max(...under);
-  return Math.min(...totals);
+  for (let i = 1; i <= aceCount; i++) totals.push(hardTotal + i * 10);
+  const best = totals.filter(t => t <= 21).length ? Math.max(...totals.filter(t => t <= 21)) : Math.min(...totals);
+  const isSoft = hasAce && totals.some(t => t <= 21 && t !== hardTotal);
+  return { ranks, isPair, pairRank, hardTotal, isSoft, softTotal: best };
 }
 
 function normRank(x) {
   const s = String(x).trim().toUpperCase();
-  if (s === "0") return "T";
-  if (["A","2","3","4","5","6","7","8","9","T"].includes(s)) return s;
-  return s;
+  return s === "0" ? "T" : (["A","2","3","4","5","6","7","8","9","T"].includes(s) ? s : s);
 }
-
-function rankValue(r) {
-  if (r === "A") return 1;
-  if (r === "T") return 10;
-  return Number(r);
-}
-
-function pairRankValue(r) {
-  if (r === "A") return 11;
-  if (r === "T") return 10;
-  return Number(r);
-}
-
-function isUpIn(up, arr) {
-  if (up === "A" || up === "T") return arr.includes(up);
-  return arr.includes(Number(up));
-}
+function rankValue(r) { return r === "A" ? 1 : (r === "T" ? 10 : Number(r)); }
+function pairRankValue(r) { return r === "A" ? 11 : (r === "T" ? 10 : Number(r)); }
+function isUpIn(up, arr) { return up === "A" || up === "T" ? arr.includes(up) : arr.includes(Number(up)); }
