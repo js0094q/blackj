@@ -1,16 +1,11 @@
 :root {
   --bg: #0b1020;
-  --accent: #4f7cff; /* Blue Quality Primary */
+  --accent: #4f7cff; /* Blue Quality Primary Accent */
   --text: #e6ecff;
+  --panel: #141c3d;
 }
 
-/* Highlighted Betting and TC Indicators */
-.countbox {
-  background: rgba(20, 28, 61, 0.9);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
+/* Professional Betting Indicator */
 #betBig {
   color: var(--text);
   border: 2px solid var(--accent);
@@ -18,5 +13,7 @@
   font-size: 24px;
   font-weight: 1000;
   text-align: center;
+  padding: 15px;
+  border-radius: 12px;
   box-shadow: 0 0 15px rgba(79, 124, 255, 0.3);
 }
