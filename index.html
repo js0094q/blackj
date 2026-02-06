@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Blue Agent - Voice</title>
+  <title>Blue Agent - Manual</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
@@ -33,18 +33,35 @@
     </div>
   </div>
 
-  <div class="panel">
-    <div class="label">STRATEGY ADVICE</div>
-    <div class="advice-box">
-      <div id="advice-text" class="advice-action">—</div>
-      <div id="advice-reason" class="muted" style="font-size:12px">Waiting for cards...</div>
+  <div class="panel" style="padding: 10px;">
+    <div class="label" style="margin-bottom:8px">LOG NEXT CARD TO:</div>
+    <div class="tag-row">
+      <button id="tag-player" class="tag-btn active">ME</button>
+      <button id="tag-table" class="tag-btn">TABLE</button>
+      <button id="tag-dealer" class="tag-btn">DEALER</button>
     </div>
   </div>
 
   <div class="panel">
-    <div class="label">DEALER UP: <span id="dealer-card" style="color:white; font-size:18px">—</span></div>
+    <div class="row space">
+      <div>
+        <div class="label">DEALER SHOWS</div>
+        <div id="dealer-card" class="card-display">—</div>
+      </div>
+      <div style="text-align:right">
+        <div class="label">MY HAND</div>
+        <div id="player-hand" class="card-display" style="color:var(--accent)">—</div>
+      </div>
+    </div>
     
-    <div class="pad" style="margin-top:12px">
+    <div class="advice-box">
+      <div class="label" style="color:var(--muted)">ADVICE</div>
+      <div id="advice-text" class="advice-action">—</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pad">
       <button class="cardbtn" data-card="A">A</button>
       <button class="cardbtn" data-card="2">2</button>
       <button class="cardbtn" data-card="3">3</button>
@@ -58,7 +75,7 @@
     </div>
   </div>
 
-  <button id="reset-btn" class="cardbtn" style="background:#3d1a1a; padding:12px; font-size:16px; margin-top:10px;">NEW ROUND</button>
+  <button id="reset-btn" class="cardbtn" style="background:#3d1a1a; padding:12px; font-size:16px; margin-top:10px; width:100%">NEW ROUND</button>
 </main>
 
 <script type="module" src="./app.js"></script>
