@@ -1,100 +1,40 @@
-:root {
-  --bg: #05080f;        /* Deep Stealth Black */
-  --panel: #0d121f;     /* Dark Navy */
-  --panel2: #12192b;
-  --text: #e6ecff;
-  --muted: #7a8bbd;
-  --border: #1e294a;
-  --accent: #4f7cff;    /* Blue Quality Primary */
-  --warn: #ff4f4f;
+/* ... (Keep existing :root and body styles) ... */
+
+/* New Tag Buttons */
+.tag-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; line-height: 1.4; }
-
-.topbar {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 16px;
-  background: rgba(5, 8, 15, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
-}
-
-.row { display: flex; align-items: center; gap: 10px; }
-.title { font-weight: 900; letter-spacing: 0.5px; font-size: 14px; }
-
-/* Mic Button */
-.mic-btn {
+.tag-btn {
   background: var(--panel2);
   border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-weight: 700;
-  font-size: 13px;
+  color: var(--muted);
+  padding: 12px;
+  font-weight: 900;
+  font-size: 14px;
+  border-radius: 8px;
   cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
   transition: all 0.2s;
 }
-.mic-btn.listening {
-  background: #3d1a1a;
-  border-color: var(--warn);
-  color: var(--warn);
-  animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255, 79, 79, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(255, 79, 79, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 79, 79, 0); }
+
+.tag-btn.active {
+  background: var(--accent);
+  color: #05080f; /* Dark text on blue background */
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(79, 124, 255, 0.4);
 }
 
-.counts { display: flex; gap: 8px; }
-.countbox {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 8px;
-  text-align: center;
-  min-width: 50px;
-}
-.countbox.highlight { border-color: var(--accent); box-shadow: 0 0 8px rgba(79, 124, 255, 0.15); }
-.countbox .label { font-size: 9px; color: var(--muted); font-weight: 800; }
-.countbox .value { font-size: 16px; font-weight: 900; }
-
-.wrap { max-width: 600px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
-
-.bet-display {
-  display: flex; justify-content: space-between; align-items: center;
-  background: linear-gradient(135deg, rgba(79, 124, 255, 0.1) 0%, rgba(79, 124, 255, 0) 100%);
-  border: 2px solid var(--accent);
-  padding: 16px 20px;
-  border-radius: 12px;
-}
-.bet-value { font-size: 32px; font-weight: 1000; color: var(--text); }
-.label { font-size: 11px; color: var(--muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
-
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
-
-.advice-box {
-  background: var(--panel2);
-  border-left: 4px solid var(--accent);
-  padding: 12px 16px;
-  border-radius: 0 8px 8px 0;
-  margin-top: 8px;
-}
-.advice-action { font-size: 24px; font-weight: 1000; text-transform: uppercase; color: var(--accent); }
-
-.pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-.cardbtn {
-  background: #1a223d;
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 16px 0;
+/* Card Displays */
+.card-display {
   font-size: 20px;
-  font-weight: 900;
-  border-radius: 10px;
-  cursor: pointer;
-  touch-action: manipulation;
+  font-weight: 1000;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
 }
-.cardbtn:active { background: var(--accent); color: #000; transform: scale(0.96); }
+
+.space { display: flex; justify-content: space-between; align-items: flex-start; }
+
+/* ... (Keep existing .mic-btn, .counts, .bet-display, .pad, .cardbtn, etc.) ... */
