@@ -1,70 +1,71 @@
-// app.js
 import { recommendMove } from "./strategy-h17-ls.js";
 import { normalizeCardToken, hiloValue, computeTrueCount, clamp } from "./count.js";
 
-const $ = (id) => document.getElementById(id);
 const state = {
-  decks: 6, runningCount: 0, decksRemaining: 6,
-  autoTagOn: true, tagMode: "table",
   bankroll: 1000, minBet: 10, maxBet: 200, riskPct: 25,
-  dealerUp: null, hands: [{ cards: [] }], activeHand: 0,
-  history: [], tableLog: []
+  runningCount: 0, decksRemaining: 6,
+  dealerUp: null, hands: [{ cards: [] }],
+  autoTagOn: true, history: [], tableLog: []
 };
 
-// Blue Quality Math: (TC-1) * 0.5% Edge
-function suggestedBet(trueCount) {
+// Blue Quality Sizing: (TC-1) * 0.5% Edge
+function getBetSizing(trueCount) {
   const edge = (trueCount - 1) * 0.005;
-  const risk = (Number(state.riskPct) || 25) / 100;
-  if (edge <= 0) return { bet: state.minBet, edge };
+  const variance = 1.3;
+  const risk = (state.riskPct / 100);
 
-  let bet = state.bankroll * (edge / 1.3) * risk;
-  return { bet: Math.round(clamp(bet, state.minBet, state.maxBet)), edge };
+  if (edge <= 0) return { bet: state.minBet, edge: edge };
+
+  let optimal = state.bankroll * (edge / variance) * risk;
+  return { 
+    bet: Math.round(clamp(optimal, state.minBet, state.maxBet)), 
+    edge: edge 
+  };
 }
 
-// Dealer Last Sequence
-function inferTagForTap() {
-  if (!state.autoTagOn) return state.tagMode;
-  if (!state.dealerUp) return "dealer"; // Step 1
-  if (state.hands[state.activeHand].cards.length < 2) return "player"; // Step 2
-  return "table"; // Step 3
+// Auto-Sequence: Dealer -> Me -> Table
+function getTargetTag() {
+  if (!state.dealerUp) return "dealer"; 
+  if (state.hands[0].cards.length < 2) return "player";
+  return "table"; 
 }
 
-function logCard(raw) {
-  const tok = normalizeCardToken(raw);
+function logCard(rank) {
+  const tok = normalizeCardToken(rank);
   if (!tok) return;
-  const tag = inferTagForTap();
-  const delta = hiloValue(tok);
-  state.runningCount += delta;
 
-  if (tag === "dealer") {
-    state.dealerUp = tok;
-    state.history.push({ tag: "dealer", delta, prev: null });
-  } else if (tag === "player") {
-    state.hands[state.activeHand].cards.push(tok);
-    state.history.push({ tag: "player", delta, handIndex: state.activeHand });
-  } else {
-    state.tableLog.push(tok);
-    state.history.push({ tag: "table", delta });
-  }
+  const tag = getTargetTag();
+  state.runningCount += hiloValue(tok);
+
+  if (tag === "dealer") state.dealerUp = tok;
+  else if (tag === "player") state.hands[0].cards.push(tok);
+  else state.tableLog.push(tok);
+
+  state.history.push({ tok, tag });
   render();
 }
 
 function render() {
-  const tc = computeTrueCount(state.runningCount, state.decksRemaining);
-  const betData = suggestedBet(tc);
+  const trueCount = computeTrueCount(state.runningCount, state.decksRemaining);
+  const sizing = getBetSizing(trueCount);
+
+  document.getElementById("rc").textContent = state.runningCount;
+  document.getElementById("tc").textContent = trueCount.toFixed(1);
+  document.getElementById("bet-val").textContent = `$${sizing.bet}`;
+  document.getElementById("edge-val").textContent = `${(sizing.edge * 100).toFixed(1)}%`;
+  document.getElementById("dealer-card").textContent = state.dealerUp || "—";
   
-  $("rc").textContent = state.runningCount;
-  $("tc").textContent = tc.toFixed(1);
-  $("betBig").textContent = `$${betData.bet}`;
-  $("edgeLabel").textContent = `${(betData.edge * 100).toFixed(1)}%`;
-  $("dealerUp").textContent = state.dealerUp || "—";
-  $("tableLog").textContent = state.tableLog.join(" ") || "—";
-  
-  const advice = recommendMove(state.hands[state.activeHand].cards, state.dealerUp);
-  $("advice").textContent = advice.action || "—";
-  $("adviceReason").textContent = advice.reason;
+  const move = recommendMove(state.hands[0].cards, state.dealerUp);
+  document.getElementById("advice-text").textContent = move.action || "WAITING...";
+  document.getElementById("advice-reason").textContent = move.reason;
 }
 
+// Event Listeners for Buttons
 document.querySelectorAll(".cardbtn").forEach(btn => {
   btn.addEventListener("click", () => logCard(btn.dataset.card));
+});
+
+document.getElementById("reset-btn").addEventListener("click", () => {
+  state.runningCount = 0; state.dealerUp = null; state.hands[0].cards = [];
+  render();
 });
