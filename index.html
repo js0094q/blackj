@@ -1,5 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Blue Agent - Voice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
 <header class="topbar">
-  <div class="title" style="font-weight:900">BLUE AGENT</div>
+  <div class="row">
+    <div class="title">BLUE AGENT</div>
+    <button id="mic-btn" class="mic-btn">🎙️ LISTEN</button>
+  </div>
+  
   <div class="counts">
     <div class="countbox"><div class="label">RC</div><div id="rc" class="value">0</div></div>
     <div class="countbox"><div class="label">TC</div><div id="tc" class="value">0.0</div></div>
@@ -23,12 +37,13 @@
     <div class="label">STRATEGY ADVICE</div>
     <div class="advice-box">
       <div id="advice-text" class="advice-action">—</div>
-      <div id="advice-reason" class="muted" style="font-size:12px">Waiting for Dealer and Player cards...</div>
+      <div id="advice-reason" class="muted" style="font-size:12px">Waiting for cards...</div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="label">DEALER UP: <span id="dealer-card" style="color:white">—</span></div>
+    <div class="label">DEALER UP: <span id="dealer-card" style="color:white; font-size:18px">—</span></div>
+    
     <div class="pad" style="margin-top:12px">
       <button class="cardbtn" data-card="A">A</button>
       <button class="cardbtn" data-card="2">2</button>
@@ -36,12 +51,3 @@
       <button class="cardbtn" data-card="4">4</button>
       <button class="cardbtn" data-card="5">5</button>
       <button class="cardbtn" data-card="6">6</button>
-      <button class="cardbtn" data-card="7">7</button>
-      <button class="cardbtn" data-card="8">8</button>
-      <button class="cardbtn" data-card="9">9</button>
-      <button class="cardbtn" data-card="T">10</button>
-    </div>
-  </div>
-
-  <button id="reset-btn" class="cardbtn" style="background:#3d1a1a; padding:10px">NEW ROUND</button>
-</main>
