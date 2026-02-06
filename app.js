@@ -8,10 +8,10 @@ const state = {
   autoTagOn: true, history: [], tableLog: []
 };
 
-// --- VOICE CONTROL ---
+// --- VOICE CONTROL MODULE ---
 function startListening() {
   if (!('webkitSpeechRecognition' in window)) {
-    alert("Voice control requires Chrome, Edge, or Android Chrome.");
+    alert("Voice control requires Chrome (Desktop/Android).");
     return;
   }
   const recognition = new webkitSpeechRecognition();
@@ -32,7 +32,7 @@ function startListening() {
 }
 
 function processVoiceCommand(phrase) {
-  // Simple mapping for game night speed
+  // Common speech-to-text misinterpretations map
   const map = {
     "ace": "A", "one": "A",
     "two": "2", "to": "2", "too": "2",
@@ -44,24 +44,24 @@ function processVoiceCommand(phrase) {
     "eight": "8", "ate": "8",
     "nine": "9",
     "ten": "T", "jack": "T", "queen": "T", "king": "T", "face": "T",
-    "hit": "HIT", "stand": "STAND", // Just for fun logging if needed
-    "reset": "RESET", "new": "RESET"
+    "hit": "HIT", "stand": "STAND", 
+    "reset": "RESET", "new": "RESET", "new round": "RESET"
   };
 
   const words = phrase.split(" ");
-  const lastWord = words[words.length - 1]; // "Dealer has a King" -> "King"
+  const lastWord = words[words.length - 1]; 
   const token = map[lastWord] || map[phrase];
 
   if (token === "RESET") {
     document.getElementById("reset-btn").click();
-  } else if (token && token.length === 1) { // Only log cards (length 1 tokens)
+  } else if (token && token.length === 1) { 
     logCard(token);
   }
 }
 
 // --- BLUE QUALITY BETTING & LOGIC ---
 function getBetSizing(trueCount) {
-  const edge = (trueCount - 1) * 0.005; // (TC-1)*0.5%
+  const edge = (trueCount - 1) * 0.005; // (TC-1)*0.5% Edge
   const variance = 1.3;
   const risk = 0.25; // 25% Kelly
 
