@@ -1,11 +1,11 @@
-// Integrated Betting and Fast-Log Logic
+// --- Integrated Betting and Fast-Log Logic ---
 function suggestedBet(trueCount) {
-  const br = Math.max(0, Number(state.bankroll));
-  const minB = Number(state.minBet);
-  const maxB = Number(state.maxBet);
+  const br = Math.max(0, Number(state.bankroll) || 0);
+  const minB = Number(state.minBet) || 0;
+  const maxB = Number(state.maxBet) || 200;
   const riskFrac = 0.25; // 25% Fractional Kelly for safety
 
-  // Edge Calculation
+  // Edge Calculation: (TC - 1) * 0.5%
   const edge = (trueCount - 1) * 0.005; 
   const variance = 1.3;
 
@@ -14,17 +14,15 @@ function suggestedBet(trueCount) {
   // Fractional Kelly Formula
   let bet = br * (edge / variance) * riskFrac;
   
-  // Clamp and Round for 'Table Quality' feel
+  // Round and Clamp for "Blue Quality"
   bet = Math.round(clamp(bet, minB, maxB));
   return { bet, edge };
 }
 
-// Auto-Cycling Tag Logic for Real-Life Speed
+// "Dealer Last" Auto-Cycling Logic
 function inferTagForTap() {
   if (!state.dealerUp) return "dealer"; // Step 1: Dealer Upcard
-  
   const myHand = state.hands[state.activeHand];
-  if (myHand && myHand.cards.length < 2) return "player"; // Step 2: My first 2 cards
-  
-  return "table"; // Step 3: Other players' cards
+  if (myHand && myHand.cards.length < 2) return "player"; // Step 2: Me (first 2)
+  return "table"; // Step 3: All others and Dealer Hole Card
 }
