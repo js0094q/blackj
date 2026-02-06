@@ -10,7 +10,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; line-height: 1.4; }
 
 .topbar {
   position: sticky; top: 0; z-index: 100;
@@ -22,7 +22,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: system
 }
 
 .row { display: flex; align-items: center; gap: 10px; }
-.title { font-weight: 900; letter-spacing: 0.5px; }
+.title { font-weight: 900; letter-spacing: 0.5px; font-size: 14px; }
 
 /* Mic Button */
 .mic-btn {
@@ -54,12 +54,12 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: system
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 6px 8px;
   text-align: center;
-  min-width: 55px;
+  min-width: 50px;
 }
 .countbox.highlight { border-color: var(--accent); box-shadow: 0 0 8px rgba(79, 124, 255, 0.15); }
-.countbox .label { font-size: 10px; color: var(--muted); font-weight: 800; }
+.countbox .label { font-size: 9px; color: var(--muted); font-weight: 800; }
 .countbox .value { font-size: 16px; font-weight: 900; }
 
 .wrap { max-width: 600px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
@@ -72,7 +72,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: system
   border-radius: 12px;
 }
 .bet-value { font-size: 32px; font-weight: 1000; color: var(--text); }
-.label { font-size: 11px; color: var(--muted); font-weight: 800; letter-spacing: 0.5px; }
+.label { font-size: 11px; color: var(--muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
 
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
 
@@ -90,10 +90,11 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: system
   background: #1a223d;
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 18px 0;
+  padding: 16px 0;
   font-size: 20px;
   font-weight: 900;
   border-radius: 10px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .cardbtn:active { background: var(--accent); color: #000; transform: scale(0.96); }
