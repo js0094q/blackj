@@ -1,201 +1,35 @@
-<!-- index.html -->
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Blackjack Counter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-
 <header class="topbar">
-  <div class="brand">
-    <div class="logo">BJ</div>
-    <div>
-      <div class="title">Blackjack Counter</div>
-      <div class="subtitle">6D · H17 · DAS · Late Surrender · Dealer Peek</div>
-    </div>
-  </div>
-
+  <div class="title" style="font-weight:900">BLUE AGENT</div>
   <div class="counts">
-    <div class="countbox">
-      <div class="label">RC</div>
-      <div id="rc" class="value">0</div>
-    </div>
-    <div class="countbox">
-      <div class="label">DR</div>
-      <div id="dr" class="value">6.0</div>
-    </div>
-    <div class="countbox">
-      <div class="label">TC</div>
-      <div id="tc" class="value">0.0</div>
-    </div>
-    <div class="countbox">
-      <div class="label">BET</div>
-      <div id="bet" class="value">$0</div>
-    </div>
+    <div class="countbox"><div class="label">RC</div><div id="rc" class="value">0</div></div>
+    <div class="countbox"><div class="label">TC</div><div id="tc" class="value">0.0</div></div>
+    <div class="countbox highlight"><div class="label">BET</div><div id="bet-val" class="value">$10</div></div>
   </div>
 </header>
 
 <main class="wrap">
-
-  <section class="panel">
-    <div class="row space">
-      <h2>Controls</h2>
-      <div class="row gap">
-        <button id="btnNewRound" class="btn">New Round</button>
-        <button id="btnNewShoe" class="btn">New Shoe</button>
-        <button id="btnUndo" class="btn warn">Undo</button>
-      </div>
+  <div class="bet-display">
+    <div>
+      <div class="label">SUGGESTED BET</div>
+      <div id="bet-val-big" class="bet-value">$10</div>
     </div>
-
-    <div class="grid2">
-      <div class="subpanel">
-        <div class="row space">
-          <div>
-            <div class="label">Penetration (shoe used)</div>
-            <div class="muted">Slide to adjust decks remaining automatically.</div>
-          </div>
-          <div class="pill"><span id="penLabel">0%</span></div>
-        </div>
-        <input id="pen" type="range" min="0" max="90" step="1" value="0" />
-        <div class="row space small muted">
-          <div>0% fresh</div>
-          <div>90% deep</div>
-        </div>
-
-        <div class="row space" style="margin-top:12px;">
-          <div>
-            <div class="label">Auto-tag input</div>
-            <div class="muted small">Dealer, then first 2 player cards, then table.</div>
-          </div>
-          <label class="toggle">
-            <input id="autoTagToggle" type="checkbox" checked />
-            <span>ON</span>
-          </label>
-        </div>
-
-        <div class="muted small" style="margin-top:10px;">
-          Tips: long-press logs to <b>Table</b>. Double-tap <b>Undo</b>.
-        </div>
-      </div>
-
-      <div class="subpanel">
-        <div class="row space">
-          <div>
-            <div class="label">Deviations</div>
-            <div class="muted">Small I18-style set, rule-gated.</div>
-          </div>
-          <label class="toggle">
-            <input id="devToggle" type="checkbox" />
-            <span>ON</span>
-          </label>
-        </div>
-
-        <div class="row space" style="margin-top:10px;">
-          <button id="btnPeekRule" class="btn small">Dealer Peek: YES</button>
-          <button id="btnResetTag" class="btn small">Tag: Table</button>
-        </div>
-
-        <div class="muted small" style="margin-top:10px;">
-          Late Surrender vs A/10 is only offered when Dealer Peek is YES.
-        </div>
-      </div>
+    <div style="text-align:right">
+      <div class="label">EDGE</div>
+      <div id="edge-val" style="font-size:20px; font-weight:800; color:var(--accent)">0.0%</div>
     </div>
-  </section>
+  </div>
 
-  <section class="panel">
-    <h2>Bankroll & Bet Sizing</h2>
-
-    <div class="grid3">
-      <div class="subpanel">
-        <div class="label">Bankroll ($)</div>
-        <input id="bankroll" class="in" type="number" min="0" step="1" value="1000" />
-        <div class="muted small" style="margin-top:8px;">
-          Use full bankroll, not session buy-in.
-        </div>
-      </div>
-
-      <div class="subpanel">
-        <div class="label">Min / Max Bet ($)</div>
-        <div class="row gap" style="margin-top:8px;">
-          <input id="minBet" class="in" type="number" min="0" step="1" value="10" />
-          <input id="maxBet" class="in" type="number" min="0" step="1" value="200" />
-        </div>
-        <div class="muted small" style="margin-top:8px;">
-          Max is your practical table cap.
-        </div>
-      </div>
-
-      <div class="subpanel">
-        <div class="label">Risk (Fractional Kelly)</div>
-        <input id="risk" type="range" min="0" max="100" step="1" value="25" />
-        <div class="row space small muted" style="margin-top:8px;">
-          <div>0%</div>
-          <div><span id="riskLabel">25%</span></div>
-          <div>100%</div>
-        </div>
-        <div class="muted small" style="margin-top:8px;">
-          25% conservative, 100% aggressive.
-        </div>
-      </div>
+  <div class="panel">
+    <div class="label">STRATEGY ADVICE</div>
+    <div class="advice-box">
+      <div id="advice-text" class="advice-action">—</div>
+      <div id="advice-reason" class="muted" style="font-size:12px">Waiting for Dealer and Player cards...</div>
     </div>
+  </div>
 
-    <div class="subpanel" style="margin-top:10px;">
-      <div class="row space">
-        <div>
-          <div class="label">Estimated Edge</div>
-          <div class="muted small">TC rule-of-thumb, sizing only.</div>
-        </div>
-        <div class="pill"><span id="edgeLabel">0.0%</span></div>
-      </div>
-
-      <div class="row space" style="margin-top:10px;">
-        <div class="muted small">Suggested bet:</div>
-        <div class="bigpill"><span id="betBig">$10</span></div>
-      </div>
-
-      <div class="muted small" style="margin-top:10px;">
-        This is a practical sizing helper, not a simulator.
-      </div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="row space">
-      <h2>Tag</h2>
-      <div class="pill">Next tap goes to:</div>
-    </div>
-
-    <div class="tagrow">
-      <button id="tagTable" class="tag active">Table</button>
-      <button id="tagPlayer" class="tag">Me</button>
-      <button id="tagDealer" class="tag">Dealer Up</button>
-    </div>
-
-    <div class="stategrid">
-      <div class="statebox">
-        <div class="label">Dealer Upcard</div>
-        <div id="dealerUp" class="bigpill">—</div>
-      </div>
-
-      <div class="statebox">
-        <div class="row space">
-          <div class="label">Your Hands</div>
-          <div class="row gap">
-            <button id="btnSplit" class="btn small" disabled>Split</button>
-            <button id="btnNextHand" class="btn small" disabled>Next Hand</button>
-          </div>
-        </div>
-        <div id="hands" class="hands"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Tap Cards</h2>
-    <div class="pad">
+  <div class="panel">
+    <div class="label">DEALER UP: <span id="dealer-card" style="color:white">—</span></div>
+    <div class="pad" style="margin-top:12px">
       <button class="cardbtn" data-card="A">A</button>
       <button class="cardbtn" data-card="2">2</button>
       <button class="cardbtn" data-card="3">3</button>
@@ -207,42 +41,7 @@
       <button class="cardbtn" data-card="9">9</button>
       <button class="cardbtn" data-card="T">10</button>
     </div>
+  </div>
 
-    <div class="muted small" style="margin-top:10px;">
-      Keyboard: A,2-9,T to log. U=Undo, N=New Round, S=New Shoe.
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="row space">
-      <h2>Recommended Move</h2>
-      <div id="adviceTag" class="pill">BASIC</div>
-    </div>
-
-    <div class="advicebox">
-      <div id="advice" class="advice">—</div>
-      <div id="adviceReason" class="muted">
-        Set Dealer Up and at least two cards in your active hand.
-      </div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Log</h2>
-    <div class="grid2">
-      <div class="subpanel">
-        <div class="label">Table exposures</div>
-        <div id="tableLog" class="log">—</div>
-      </div>
-      <div class="subpanel">
-        <div class="label">Tagged</div>
-        <div id="tagLog" class="log">—</div>
-      </div>
-    </div>
-  </section>
-
+  <button id="reset-btn" class="cardbtn" style="background:#3d1a1a; padding:10px">NEW ROUND</button>
 </main>
-
-<script type="module" src="./app.js"></script>
-</body>
-</html>
