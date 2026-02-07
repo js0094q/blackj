@@ -1,90 +1,35 @@
-/* styles.css */
-:root {
-  --bg: #0b0e14;
-  --panel: #161b26;
-  --text: #eef1f5;
-  --muted: #64748b;
-  --border: #262f40;
-  --accent: #3b82f6;
-  --green: #10b981;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-}
+/* Add to styles.css */
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
-
-/* --- Advice Hero --- */
 .advice-hero {
-  text-align: center; padding: 20px; border-radius: 12px;
-  background: var(--panel); border: 2px solid var(--border);
-  transition: all 0.3s ease;
-}
-.advice-hero.hit { border-color: var(--green); background: rgba(16, 185, 129, 0.1); }
-.advice-hero.stand { border-color: var(--red); background: rgba(239, 68, 68, 0.1); }
-.advice-hero.double { border-color: var(--yellow); background: rgba(245, 158, 11, 0.1); }
-.advice-hero.split { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
-
-.advice-main { font-size: 36px; font-weight: 900; margin: 5px 0; text-transform: uppercase; }
-.advice-sub { font-size: 12px; color: var(--muted); font-weight: 600; }
-.advice-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; font-weight: 800; }
-
-/* --- Topbar & Stats --- */
-.topbar {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 16px; background: rgba(11,14,20,0.95);
-  border-bottom: 1px solid var(--border);
-}
-.counts { display: flex; gap: 8px; }
-.countbox {
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: 6px; padding: 4px 10px; text-align: center;
-}
-.countbox.highlight { border-color: var(--accent); color: var(--accent); }
-.countbox .value { font-size: 16px; font-weight: 800; }
-.countbox .label { font-size: 9px; color: var(--muted); font-weight: 700; }
-
-/* --- Controls --- */
-.wrap { max-width: 480px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; }
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-.panel.tight { padding: 6px; }
-
-/* Tag Buttons */
-.tag-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
-.tag-btn {
-  background: transparent; border: none; color: var(--muted);
-  padding: 10px; font-weight: 800; font-size: 12px; border-radius: 8px; cursor: pointer;
-}
-.tag-btn.active { background: var(--accent); color: white; }
-
-/* Numpad Grid */
-.pad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.cardbtn {
-  background: #1e2532; border: 1px solid var(--border);
-  color: var(--text); padding: 16px; font-size: 20px; font-weight: 700;
-  border-radius: 8px; cursor: pointer;
-}
-.cardbtn:active { background: var(--accent); transform: scale(0.98); }
-.cardbtn.zero { grid-column: span 3; background: #232a38; }
-
-/* Action Buttons */
-.secondary-btn {
-  background: transparent; border: 1px solid var(--border); color: var(--muted);
-  width: 100%; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer;
-}
-.reset-btn {
-  background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--red); width: 100%; padding: 12px; border-radius: 8px; font-weight: 800;
-  margin-left: 8px; cursor: pointer;
+  /* Keep existing styles */
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 160px; /* Taller for text */
 }
 
-/* Modal */
-.modal {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-  display: flex; justify-content: center; align-items: center; z-index: 999;
+.advice-sub {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a0aec0;
+  text-align: left;
+  width: 100%;
 }
-.modal.hidden { display: none; }
-.modal-content { background: var(--panel); padding: 24px; border-radius: 12px; width: 300px; }
-.icon-btn { background: none; border: none; font-size: 18px; cursor: pointer; }
-input { background: var(--bg); border: 1px solid var(--border); color: white; padding: 8px; width: 100%; margin-bottom: 12px; }
-.action-btn { background: var(--accent); border: none; color: white; padding: 12px; width: 100%; font-weight: 800; cursor: pointer; }
+
+.context-box {
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 10px;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.advice-hero.warning { border-color: #f97316; background: rgba(249, 115, 22, 0.1); }
+.advice-hero.surrender { border-color: #ec4899; background: rgba(236, 72, 153, 0.1); }
+
+/* Deviation Marker - Hidden by default, shown via JS if needed or you can toggle class */
+.advice-deviation-mark {
+  display: none; /* Logic can toggle this to block if isDeviation is true */
+  background: var(--accent); color: #000;
+  font-size: 9px; font-weight: 900;
+  padding: 2px 6px; border-radius: 4px;
+}
