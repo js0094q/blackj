@@ -1,134 +1,156 @@
 import { recommendMove } from "./strategy-h17-ls.js";
 import { normalizeCardToken, hiloValue, computeTrueCount, clamp } from "./count.js";
 
-const state = {
-  bankroll: 1000, minBet: 10, maxBet: 200, riskPct: 25,
-  runningCount: 0, decksRemaining: 6,
-  dealerUp: null, 
-  hands: [{ cards: [] }], // Your hand
-  tagMode: "player",      // Defaults to Player (YOU)
-  history: [], tableLog: []
+const config = {
+  decks: 6, minBet: 10, maxBet: 500, bankroll: 1000
 };
 
-// --- VOICE CONTROL (Updated for explicit tagging) ---
-function startListening() {
-  if (!('webkitSpeechRecognition' in window)) {
-    alert("Voice control requires Chrome/Edge.");
-    return;
-  }
-  const recognition = new webkitSpeechRecognition();
-  recognition.continuous = true;
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
+// Snapshot-based history for easy Undo
+let historyStack = [];
 
-  const btn = document.getElementById("mic-btn");
-  btn.classList.add("listening");
+const state = {
+  runningCount: 0,
+  dealerUp: null,
+  hands: [{ cards: [] }], // Only support 1 player hand for manual simplicity
+  tagMode: "player"
+};
 
-  recognition.onresult = (event) => {
-    const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-    processVoiceCommand(transcript);
-  };
-  recognition.onend = () => btn.classList.remove("listening");
-  recognition.start();
+/* --- STATE MANAGEMENT --- */
+function saveState() {
+  historyStack.push(JSON.stringify(state));
+  if (historyStack.length > 50) historyStack.shift(); // Limit history
 }
 
-function processVoiceCommand(phrase) {
-  const map = {
-    "ace": "A", "one": "A", "two": "2", "three": "3", "four": "4", "five": "5",
-    "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "T", "jack": "T",
-    "queen": "T", "king": "T", "hit": "HIT", "stand": "STAND", "reset": "RESET",
-    "dealer": "SET_DEALER", "me": "SET_PLAYER", "player": "SET_PLAYER", "table": "SET_TABLE"
-  };
-
-  // Check for commands like "Dealer" or "Table" to switch modes via voice
-  const words = phrase.split(" ");
-  const token = map[words[words.length - 1]] || map[phrase];
-
-  if (token === "RESET") resetRound();
-  else if (token === "SET_DEALER") setTag("dealer");
-  else if (token === "SET_PLAYER") setTag("player");
-  else if (token === "SET_TABLE") setTag("table");
-  else if (token && token.length === 1) logCard(token);
-}
-
-// --- CORE LOGIC ---
-function setTag(mode) {
-  state.tagMode = mode;
-  // Update UI buttons
-  document.querySelectorAll(".tag-btn").forEach(b => b.classList.remove("active"));
-  if (mode === "player") document.getElementById("tag-player").classList.add("active");
-  else if (mode === "dealer") document.getElementById("tag-dealer").classList.add("active");
-  else document.getElementById("tag-table").classList.add("active");
-}
-
-function logCard(rank) {
-  const tok = normalizeCardToken(rank);
-  if (!tok) return;
-
-  state.runningCount += hiloValue(tok);
-
-  if (state.tagMode === "dealer") {
-    state.dealerUp = tok;
-    // Automatically switch to player after logging dealer card? 
-    // Uncomment next line if you want that convenience:
-    // setTag("player"); 
-  } 
-  else if (state.tagMode === "player") {
-    state.hands[0].cards.push(tok);
-  } 
-  else {
-    state.tableLog.push(tok);
-  }
-
+function restoreState() {
+  if (historyStack.length === 0) return;
+  const prev = JSON.parse(historyStack.pop());
+  Object.assign(state, prev);
   render();
 }
 
-function getBetSizing(trueCount) {
-  const edge = (trueCount - 1) * 0.005;
-  const optimal = state.bankroll * (edge / 1.3) * 0.25;
-  if (edge <= 0) return { bet: state.minBet, edge: 0 };
-  return { bet: Math.round(clamp(optimal, state.minBet, state.maxBet)), edge };
-}
+function processCard(input) {
+  const tok = normalizeCardToken(input);
+  if (!tok) return;
 
-function render() {
-  const tc = computeTrueCount(state.runningCount, state.decksRemaining);
-  const sizing = getBetSizing(tc);
-  
-  // Update Stats
-  document.getElementById("rc").textContent = state.runningCount;
-  document.getElementById("tc").textContent = tc.toFixed(1);
-  document.getElementById("bet-val").textContent = `$${sizing.bet}`;
-  document.getElementById("bet-val-big").textContent = `$${sizing.bet}`;
-  document.getElementById("edge-val").textContent = `${(sizing.edge * 100).toFixed(1)}%`;
-  
-  // Update Cards
-  document.getElementById("dealer-card").textContent = state.dealerUp || "—";
-  document.getElementById("player-hand").textContent = state.hands[0].cards.join("  ") || "—";
+  saveState(); // Save before mutation
 
-  // Update Advice
-  const move = recommendMove(state.hands[0].cards, state.dealerUp);
-  document.getElementById("advice-text").textContent = move.action || "—";
+  // Update Count
+  state.runningCount += hiloValue(tok);
+
+  // Logic based on Tag Mode
+  if (state.tagMode === "dealer") {
+    state.dealerUp = tok;
+    setTagMode("player"); // Auto-switch to player after dealer upcard
+  } else if (state.tagMode === "player") {
+    state.hands[0].cards.push(tok);
+  } else {
+    // Burn/Table card - just affects count
+  }
+
+  render();
 }
 
 function resetRound() {
+  saveState();
   state.dealerUp = null;
-  state.hands[0].cards = [];
-  setTag("player"); // Reset back to Player default
+  state.hands = [{ cards: [] }];
+  setTagMode("player");
   render();
 }
 
-// --- INIT ---
-document.getElementById("mic-btn").addEventListener("click", startListening);
-document.getElementById("reset-btn").addEventListener("click", resetRound);
+function setTagMode(mode) {
+  state.tagMode = mode;
+  document.querySelectorAll(".tag-btn").forEach(b => b.classList.remove("active"));
+  const map = { player: "tag-player", dealer: "tag-dealer", table: "tag-table" };
+  document.getElementById(map[mode]).classList.add("active");
+}
 
-document.getElementById("tag-player").addEventListener("click", () => setTag("player"));
-document.getElementById("tag-dealer").addEventListener("click", () => setTag("dealer"));
-document.getElementById("tag-table").addEventListener("click", () => setTag("table"));
+/* --- UI RENDERING --- */
+function render() {
+  // 1. Calc Stats
+  const decksRemaining = Math.max(0.5, config.decks - (historyStack.length / 52)); // Rough est or keep static
+  const tc = computeTrueCount(state.runningCount, config.decks); // Use config decks for simplicity
+  
+  document.getElementById("rc").textContent = state.runningCount;
+  document.getElementById("tc").textContent = tc.toFixed(1);
+  
+  // 2. Bet Sizing (Simple Kelly Criterion or linear ramp)
+  const edge = (tc - 1) * 0.5; // Rough % edge
+  let bet = config.minBet;
+  if (edge > 0) {
+    bet = Math.floor(config.minBet * (1 + (tc - 1) * 2)); // 1 Unit per TC point above 1
+    if (bet > config.maxBet) bet = config.maxBet;
+  }
+  document.getElementById("bet-val").textContent = `$${bet}`;
 
-document.querySelectorAll(".cardbtn").forEach(btn => {
-  btn.addEventListener("click", () => logCard(btn.dataset.card));
+  // 3. Cards
+  document.getElementById("dealer-card").textContent = state.dealerUp || "—";
+  document.getElementById("player-hand").textContent = state.hands[0].cards.join("  ") || "—";
+
+  // 4. Strategy Advice
+  const panel = document.getElementById("advice-panel");
+  const mainTxt = document.getElementById("advice-text");
+  const subTxt = document.getElementById("advice-sub");
+  
+  panel.className = "advice-hero"; // Reset classes
+
+  const rec = recommendMove(state.hands[0].cards, state.dealerUp);
+  
+  if (!rec.action) {
+    mainTxt.textContent = "WAITING";
+    subTxt.textContent = "Input Dealer & Player Cards";
+    panel.classList.add("waiting");
+  } else {
+    mainTxt.textContent = rec.action;
+    subTxt.textContent = rec.reason;
+    
+    // Color Coding
+    if (rec.action.includes("HIT")) panel.classList.add("hit");
+    else if (rec.action.includes("STAND")) panel.classList.add("stand");
+    else if (rec.action.includes("DOUBLE")) panel.classList.add("double");
+    else if (rec.action.includes("SPLIT")) panel.classList.add("split");
+    else if (rec.action.includes("SUR")) panel.classList.add("stand"); // Surrender usually warning color
+  }
+}
+
+/* --- INPUT HANDLING --- */
+document.addEventListener("keydown", (e) => {
+  const key = e.key.toUpperCase();
+  
+  // Modes
+  if (key === "D") setTagMode("dealer");
+  if (key === "P") setTagMode("player");
+  if (key === "T") setTagMode("table");
+  
+  // Actions
+  if (key === "R") resetRound();
+  if (key === "BACKSPACE") restoreState();
+
+  // Card Inputs
+  if (["1","A"].includes(key)) processCard("A");
+  else if (["0","J","Q","K"].includes(key)) processCard("T");
+  else if (parseInt(key) >= 2 && parseInt(key) <= 9) processCard(key);
 });
 
-// Start in Player Mode
-setTag("player");
+// Click Handlers
+document.querySelectorAll(".cardbtn").forEach(b => {
+  b.addEventListener("click", () => processCard(b.dataset.card));
+});
+document.getElementById("tag-player").addEventListener("click", () => setTagMode("player"));
+document.getElementById("tag-dealer").addEventListener("click", () => setTagMode("dealer"));
+document.getElementById("tag-table").addEventListener("click", () => setTagMode("table"));
+document.getElementById("reset-btn").addEventListener("click", resetRound);
+document.getElementById("undo-btn").addEventListener("click", restoreState);
+
+// Settings
+const modal = document.getElementById("settings-modal");
+document.getElementById("settings-toggle").addEventListener("click", () => modal.classList.remove("hidden"));
+document.getElementById("save-settings").addEventListener("click", () => {
+  config.decks = parseFloat(document.getElementById("cfg-decks").value);
+  config.minBet = parseFloat(document.getElementById("cfg-min").value);
+  modal.classList.add("hidden");
+  render();
+});
+
+// Init
 render();
