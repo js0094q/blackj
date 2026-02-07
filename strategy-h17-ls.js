@@ -1,121 +1,252 @@
-export function recommendMove(playerCards, dealerUp, opts = {}) {
-  const rules = { dealerHitsSoft17: true, lateSurrender: true, doubleAfterSplit: true, ...opts };
+import { recommendMove } from "./strategy-h17-ls.js";
+import { normalizeCardToken, hiloValue, computeTrueCount, clamp } from "./count.js";
 
-  if (!dealerUp || !playerCards || playerCards.length < 2) {
-    return { action: null, reason: "Waiting for cards..." };
+const config = {
+  decks: 6, minBet: 10, maxBet: 500, bankroll: 1000
+};
+
+let historyStack = [];
+
+const state = {
+  runningCount: 0,
+  dealerUp: null,
+  hands: [{ cards: [] }],
+  tagMode: "player"
+};
+
+/* --- LOGIC: DEVIATIONS & ADVICE --- */
+
+function getHandDetails(cards) {
+  let total = 0;
+  let aces = 0;
+  for (const c of cards) {
+    if (c === "A") { aces++; total += 11; }
+    else if (c === "T") { total += 10; }
+    else { total += Number(c); }
   }
-
-  const up = normRank(dealerUp);
-  const hand = analyzeHand(playerCards);
-
-  // 1) Late surrender (First two cards only)
-  const canSurrender = rules.lateSurrender && playerCards.length === 2;
-  if (canSurrender && shouldLateSurrender_H17_6D(hand, up)) {
-    return { action: "SUR", reason: "Late surrender (6D H17)." };
-  }
-
-  // 2) Split
-  if (hand.isPair) {
-    const split = splitDecision(hand.pairRank, up, rules);
-    if (split === "SPLIT") return { action: "SPLIT", reason: "Pair splitting chart." };
-  }
-
-  // 3) Double
-  const dbl = doubleDecision(hand, up, rules);
-  if (dbl === "DOUBLE") return { action: "DOUBLE", reason: "Doubling chart." };
-
-  // 4) Hit/Stand
-  const hs = hitStandDecision(hand, up);
-  return { action: hs, reason: "Basic Strategy." };
+  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  return { total, isSoft: aces > 0 };
 }
 
-/* --- LOGIC HELPERS --- */
-function shouldLateSurrender_H17_6D(hand, dealerUp) {
-  if (hand.isSoft) return false;
-  // 15 vs 10/A, 16 vs 9/10/A, 17 vs A, 8,8 vs A
-  if (hand.isPair && hand.pairRank === 8 && dealerUp === "A") return true;
-  const t = hand.hardTotal;
-  if (t === 17 && dealerUp === "A") return true;
-  if (t === 16 && (dealerUp === "9" || dealerUp === "T" || dealerUp === "A")) return true;
-  if (t === 15 && (dealerUp === "T" || dealerUp === "A")) return true;
-  return false;
-}
+function checkDeviations(basicAction, hand, dealerUp, trueCount) {
+  const { total, isSoft } = hand;
 
-function splitDecision(pairRank, dealerUp, rules) {
-  const up = dealerUp;
-  if (pairRank === 11) return "SPLIT"; 
-  if (pairRank === 8) return "SPLIT"; 
-  if (pairRank === 5) return "HIT"; 
-  if (pairRank === 10) return "HIT"; 
-  if (pairRank === 2 || pairRank === 3) return isUpIn(up, ["2","3","4","5","6","7"]) ? "SPLIT" : "HIT";
-  if (pairRank === 4) return (rules.doubleAfterSplit && isUpIn(up, ["5","6"])) ? "SPLIT" : "HIT";
-  if (pairRank === 6) return isUpIn(up, ["2","3","4","5","6"]) ? "SPLIT" : "HIT";
-  if (pairRank === 7) return isUpIn(up, ["2","3","4","5","6","7"]) ? "SPLIT" : "HIT";
-  if (pairRank === 9) return isUpIn(up, ["2","3","4","5","6","8","9"]) ? "SPLIT" : "STAND";
-  return "HIT";
-}
-
-function doubleDecision(hand, dealerUp, rules) {
-  const up = dealerUp;
-  if (hand.isSoft) {
-    const s = hand.softTotal;
-    if ((s === 13 || s === 14) && isUpIn(up, ["5","6"])) return "DOUBLE";
-    if ((s === 15 || s === 16) && isUpIn(up, ["4","5","6"])) return "DOUBLE";
-    if (s === 17 && isUpIn(up, ["3","4","5","6"])) return "DOUBLE";
-    if (s === 18 && isUpIn(up, ["2","3","4","5","6"])) return "DOUBLE";
-    if (s === 19 && up === "6") return "DOUBLE"; 
-    return null;
+  // Insurance
+  if (dealerUp === "A" && trueCount >= 3) {
+    return { action: "INSURANCE", reason: "True Count ≥ +3 (Insurance is +EV)" };
   }
-  const t = hand.hardTotal;
-  if (t === 9 && isUpIn(up, ["3","4","5","6"])) return "DOUBLE";
-  if (t === 10 && isUpIn(up, ["2","3","4","5","6","7","8","9"])) return "DOUBLE";
-  if (t === 11) return "DOUBLE";
+  
+  if (isSoft) return null; // Few soft deviations in this tier
+
+  // Fab 4 Surrender
+  if (total === 15 && dealerUp === "T" && trueCount >= 0 && basicAction !== "SUR") 
+    return { action: "SUR", reason: "Deviation: TC ≥ 0 (Surrender 15 vs 10)" };
+  if (total === 15 && dealerUp === "9" && trueCount >= 2 && basicAction !== "SUR") 
+    return { action: "SUR", reason: "Deviation: TC ≥ +2 (Surrender 15 vs 9)" };
+  if (total === 14 && dealerUp === "T" && trueCount >= 3 && basicAction !== "SUR") 
+    return { action: "SUR", reason: "Deviation: TC ≥ +3 (Surrender 14 vs 10)" };
+
+  // Illustrious 18 (Hit/Stand)
+  if (total === 16 && dealerUp === "T" && trueCount > 0) 
+    return { action: "STAND", reason: "Deviation: TC > 0 (Stand 16 vs 10)" };
+  if (total === 15 && dealerUp === "T" && trueCount >= 4) 
+    return { action: "STAND", reason: "Deviation: TC ≥ +4 (Stand 15 vs 10)" };
+  if (total === 12 && dealerUp === "2" && trueCount >= 3) 
+    return { action: "STAND", reason: "Deviation: TC ≥ +3 (Stand 12 vs 2)" };
+  if (total === 12 && dealerUp === "3" && trueCount >= 2) 
+    return { action: "STAND", reason: "Deviation: TC ≥ +2 (Stand 12 vs 3)" };
+
   return null;
 }
 
-function hitStandDecision(hand, dealerUp) {
-  const up = dealerUp;
-  if (hand.isSoft) {
-    const s = hand.softTotal;
-    if (s >= 19) return "STAND";
-    if (s === 18) return isUpIn(up, ["2","7","8"]) ? "STAND" : "HIT";
-    return "HIT";
+function analyzeCount(tc) {
+  if (tc >= 3) return "<b>High Edge (+).</b> Deck rich in 10s/Aces. Expect Dealer busts.";
+  if (tc >= 1) return "<b>Favorable.</b> Slight player edge.";
+  if (tc <= -2) return "<b>Unfavorable.</b> Deck rich in small cards. Min bet.";
+  return "<b>Neutral.</b>";
+}
+
+function generateCommentary(move, tc) {
+  let strat = "";
+  if (move.isDeviation) strat = "Expert Deviation based on Count.";
+  else if (move.action === "SUR") strat = "Hand is statistically too weak to play.";
+  else if (move.action === "SPLIT") strat = "Turn bad total into two better starts.";
+  else if (move.action === "DOUBLE") strat = "Capitalize on dealer weakness.";
+  else if (move.action === "HIT") strat = "Defensive Hit to improve total.";
+  else if (move.action === "STAND") strat = "Let the dealer risk busting.";
+  
+  return `${strat} (${move.reason}) <br><br> ${analyzeCount(tc)}`;
+}
+
+/* --- STATE & LOGGING --- */
+
+function addToLog(msg, type="info") {
+  const logEl = document.getElementById("activity-log");
+  const row = document.createElement("div");
+  row.className = `log-entry ${type}`;
+  
+  // Format: [RC: +X] Message
+  const rcVal = state.runningCount > 0 ? `+${state.runningCount}` : state.runningCount;
+  row.innerHTML = `<span class="log-tag">[${rcVal}]</span> ${msg}`;
+  
+  logEl.insertBefore(row, logEl.firstChild);
+}
+
+function saveState() {
+  historyStack.push(JSON.stringify(state));
+  if (historyStack.length > 50) historyStack.shift();
+}
+
+function restoreState() {
+  if (historyStack.length === 0) return;
+  const prev = JSON.parse(historyStack.pop());
+  Object.assign(state, prev);
+  addToLog("Undo Action", "info");
+  render();
+}
+
+function processCard(input) {
+  const tok = normalizeCardToken(input);
+  if (!tok) return;
+
+  saveState();
+  const val = hiloValue(tok);
+  state.runningCount += val;
+
+  let logMsg = "";
+  if (state.tagMode === "dealer") {
+    state.dealerUp = tok;
+    logMsg = `Dealer shows <strong>${tok}</strong>`;
+    setTagMode("player");
+  } else if (state.tagMode === "player") {
+    state.hands[0].cards.push(tok);
+    logMsg = `Player draws <strong>${tok}</strong>`;
+  } else {
+    logMsg = `Burn/Table: <strong>${tok}</strong>`;
   }
-  const t = hand.hardTotal;
-  if (t >= 17) return "STAND";
-  if (t >= 13 && t <= 16) return isUpIn(up, ["2","3","4","5","6"]) ? "STAND" : "HIT";
-  if (t === 12) return isUpIn(up, ["4","5","6"]) ? "STAND" : "HIT";
-  return "HIT";
+
+  addToLog(logMsg);
+  render();
 }
 
-function analyzeHand(cards) {
-  const ranks = cards.map(normRank);
-  const vals = ranks.map(rankValue);
-  const isPair = ranks.length === 2 && ranks[0] === ranks[1];
-  const pairRank = isPair ? pairRankValue(ranks[0]) : null;
-  const totals = computeTotals(vals, ranks);
-  const under = totals.filter(t => t <= 21);
-  const best = under.length ? Math.max(...under) : Math.min(...totals);
-  const hardTotal = vals.reduce((a, b) => a + b, 0);
-  const hasAce = ranks.includes("A");
-  const isSoft = hasAce && totals.some(t => t <= 21 && t !== hardTotal);
-  return { ranks, isPair, pairRank, hardTotal, isSoft, softTotal: best };
+function resetRound() {
+  if (state.hands[0].cards.length > 0) {
+    saveState();
+    addToLog("--- Round Ended ---");
+  }
+  state.dealerUp = null;
+  state.hands = [{ cards: [] }];
+  setTagMode("player");
+  render();
 }
 
-function computeTotals(vals, ranks) {
-  let total = vals.reduce((a, b) => a + b, 0);
-  const aceCount = ranks.filter(r => r === "A").length;
-  const totals = [total];
-  for (let i = 1; i <= aceCount; i++) totals.push(total + i * 10);
-  return totals;
+function setTagMode(mode) {
+  state.tagMode = mode;
+  document.querySelectorAll(".tag-btn").forEach(b => b.classList.remove("active"));
+  const map = { player: "tag-player", dealer: "tag-dealer", table: "tag-table" };
+  document.getElementById(map[mode]).classList.add("active");
 }
 
-function normRank(x) {
-  const s = String(x).trim().toUpperCase();
-  if (s === "0") return "T";
-  if (["A","2","3","4","5","6","7","8","9","T"].includes(s)) return s;
-  return s;
+/* --- RENDER --- */
+
+function render() {
+  const tc = computeTrueCount(state.runningCount, config.decks);
+  const handDetails = getHandDetails(state.hands[0].cards);
+
+  // Strategy Calculation
+  let rec = recommendMove(state.hands[0].cards, state.dealerUp);
+  if (state.hands[0].cards.length >= 2 && state.dealerUp) {
+    const dev = checkDeviations(rec.action, handDetails, state.dealerUp, tc);
+    if (dev) { rec = dev; rec.isDeviation = true; }
+  }
+
+  // Update UI Stats
+  document.getElementById("rc").textContent = state.runningCount;
+  document.getElementById("tc").textContent = tc.toFixed(1);
+
+  // Bet Sizing
+  let bet = config.minBet;
+  if (tc >= 1) bet = Math.floor(config.minBet * (1 + (tc - 0.5) * 2));
+  if (bet > config.maxBet) bet = config.maxBet;
+  
+  const betEl = document.getElementById("bet-val");
+  betEl.textContent = `$${bet}`;
+  betEl.style.color = tc >= 2 ? "var(--green)" : "var(--text)";
+
+  // Cards
+  document.getElementById("dealer-card").textContent = state.dealerUp || "—";
+  document.getElementById("player-hand").textContent = state.hands[0].cards.join("  ") || "—";
+
+  // Advice Panel
+  const panel = document.getElementById("advice-panel");
+  const mainTxt = document.getElementById("advice-text");
+  const subTxt = document.getElementById("advice-sub");
+  const devMark = document.querySelector(".advice-deviation-mark");
+  
+  panel.className = "advice-hero"; 
+  if(devMark) devMark.style.display = "none";
+
+  if (!state.dealerUp || state.hands[0].cards.length < 2) {
+    mainTxt.textContent = "WAITING";
+    subTxt.textContent = "Deal cards to generate analysis...";
+    panel.classList.add("waiting");
+  } else {
+    // Check if advice changed to log it? (Optional, skipping for noise reduction)
+    mainTxt.textContent = rec.action;
+    if (rec.isDeviation && devMark) devMark.style.display = "block";
+    subTxt.innerHTML = generateCommentary(rec, tc);
+
+    if (rec.action.includes("HIT")) panel.classList.add("hit");
+    else if (rec.action.includes("STAND")) panel.classList.add("stand");
+    else if (rec.action.includes("DOUBLE")) panel.classList.add("double");
+    else if (rec.action.includes("SPLIT")) panel.classList.add("split");
+    else if (rec.action.includes("SUR")) panel.classList.add("surrender");
+    else if (rec.action.includes("INSURANCE")) panel.classList.add("warning");
+  }
 }
-function rankValue(r) { return r === "A" ? 1 : (r === "T" ? 10 : Number(r)); }
-function pairRankValue(r) { return r === "A" ? 11 : (r === "T" ? 10 : Number(r)); }
-function isUpIn(up, arr) { return arr.includes(up) || arr.includes(Number(up)); }
+
+/* --- EVENTS --- */
+
+document.addEventListener("keydown", (e) => {
+  if(e.target.tagName === 'INPUT') return; 
+  const key = e.key.toUpperCase();
+  if (key === "D") setTagMode("dealer");
+  if (key === "P") setTagMode("player");
+  if (key === "T") setTagMode("table");
+  if (key === "R") resetRound();
+  if (key === "BACKSPACE") restoreState();
+  if (["1","A"].includes(key)) processCard("A");
+  else if (["0","J","Q","K"].includes(key)) processCard("T");
+  else if (parseInt(key) >= 2 && parseInt(key) <= 9) processCard(key);
+});
+
+// Pad & Controls
+document.querySelectorAll(".cardbtn").forEach(b => b.addEventListener("click", () => processCard(b.dataset.card)));
+document.getElementById("tag-player").addEventListener("click", () => setTagMode("player"));
+document.getElementById("tag-dealer").addEventListener("click", () => setTagMode("dealer"));
+document.getElementById("tag-table").addEventListener("click", () => setTagMode("table"));
+document.getElementById("reset-btn").addEventListener("click", resetRound);
+document.getElementById("undo-btn").addEventListener("click", restoreState);
+
+// Modals
+const sModal = document.getElementById("settings-modal");
+const iModal = document.getElementById("info-modal");
+
+document.getElementById("settings-toggle").addEventListener("click", () => sModal.classList.remove("hidden"));
+document.getElementById("close-settings").addEventListener("click", () => sModal.classList.add("hidden"));
+document.getElementById("save-settings").addEventListener("click", () => {
+  config.decks = parseFloat(document.getElementById("cfg-decks").value);
+  config.minBet = parseFloat(document.getElementById("cfg-min").value);
+  sModal.classList.add("hidden");
+  render();
+});
+
+// Info Modal
+const openInfo = () => iModal.classList.remove("hidden");
+document.getElementById("info-btn").addEventListener("click", openInfo);
+document.getElementById("rc-box").addEventListener("click", openInfo);
+document.getElementById("tc-box").addEventListener("click", openInfo);
+document.getElementById("close-info").addEventListener("click", () => iModal.classList.add("hidden"));
+
+// Init
+render();
