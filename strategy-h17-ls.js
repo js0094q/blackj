@@ -1,8 +1,4 @@
-/**
- * strategy-h17-ls.js - High-Performance O(1) Matrix
- */
-
-const S = 'STAND', H = 'HIT', D = 'DOUBLE', P = 'SPLIT', R = 'SURRENDER';
+const S='STAND', H='HIT', D='DOUBLE', P='SPLIT', R='SURRENDER';
 
 const MATRIX = {
   hard: {
@@ -41,48 +37,29 @@ const MATRIX = {
   }
 };
 
-export function recommendMove(playerCards, dealerUp, tc = 0) {
-  if (!dealerUp || playerCards.length < 2) return null;
-
-  const d = dealerUp;
-  const { total, isSoft, isPair, pairRank } = analyzeHandFast(playerCards);
-
-  // Insurance Deviation
-  if (d === 'A' && tc >= 3.0) return { action: 'INSURE', reason: 'Deviation: TC ≥ +3' };
-
-  // Common Deviations (I-18)
-  if (total === 16 && d === 'T' && tc >= 0) return { action: S, reason: 'Deviation: TC ≥ 0' };
-  if (total === 15 && d === 'T' && tc >= 4) return { action: S, reason: 'Deviation: TC ≥ 4' };
+export function recommendMove(hand, up, tc) {
+  if (!up || hand.length < 2) return null;
+  const { total, isSoft, isPair, pairRank } = analyze(hand);
+  
+  if (up === 'A' && tc >= 3.0) return { action: 'INSURE', reason: 'Deviation: TC ≥ +3' };
+  if (total === 16 && up === 'T' && tc >= 0) return { action: S, reason: 'Deviation: TC ≥ 0' };
+  if (total === 15 && up === 'T' && tc >= 4) return { action: S, reason: 'Deviation: TC ≥ 4' };
 
   let move = H;
-  if (isPair && playerCards.length === 2) {
-    move = MATRIX.pair[pairRank]?.[d] || MATRIX.pair[pairRank]?.default;
-  } else if (isSoft) {
-    move = MATRIX.soft[total]?.[d] || MATRIX.soft[total]?.default || H;
-  } else {
+  if (isPair && hand.length === 2) move = MATRIX.pair[pairRank]?.[up] || MATRIX.pair[pairRank]?.default;
+  else if (isSoft) move = MATRIX.soft[total]?.[up] || MATRIX.soft[total]?.default || H;
+  else {
     if (total >= 17) move = S;
     else if (total <= 8) move = H;
-    else move = MATRIX.hard[total]?.[d] || MATRIX.hard[total]?.default || H;
+    else move = MATRIX.hard[total]?.[up] || MATRIX.hard[total]?.default || H;
   }
-
-  // Double/Split prevention after third card
-  if (playerCards.length > 2 && (move === D || move === P)) move = H;
-
+  if (hand.length > 2 && (move === D || move === P)) move = H;
   return { action: move, reason: 'Basic Strategy' };
 }
 
-function analyzeHandFast(cards) {
-  let total = 0, aces = 0;
-  for (const c of cards) {
-    if (c === 'A') { total += 11; aces++; }
-    else if (c === 'T') { total += 10; }
-    else { total += Number(c); }
-  }
-  while (total > 21 && aces > 0) { total -= 10; aces--; }
-  return {
-    total,
-    isSoft: aces > 0,
-    isPair: cards.length === 2 && cards[0] === cards[1],
-    pairRank: cards[0]
-  };
+function analyze(cards) {
+  let total=0, aces=0;
+  for(const c of cards) { if(c==='A'){total+=11;aces++}else if(c==='T'){total+=10}else{total+=Number(c)} }
+  while(total>21 && aces>0){total-=10;aces--}
+  return { total, isSoft:aces>0, isPair:cards.length===2&&cards[0]===cards[1], pairRank:cards[0] };
 }
