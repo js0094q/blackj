@@ -1,252 +1,173 @@
-import { recommendMove } from "./strategy-h17-ls.js";
-import { normalizeCardToken, hiloValue, computeTrueCount, clamp } from "./count.js";
+/**
+ * app.js - High-Frequency Trainer Logic
+ */
+import { HILO_VALUES, normalizeRank, getTrueCount, getRecommendedBet } from './count.js';
+import { recommendMove } from './strategy-h17-ls.js';
 
-const config = {
-  decks: 6, minBet: 10, maxBet: 500, bankroll: 1000
+// --- STATE ---
+let state = {
+  rc: 0,
+  decks: 6,
+  dealer: null,
+  hand: [],
+  mode: 'dealer', // 'dealer', 'player', 'table'
+  history: [],
+  session: { hands: 0, correct: 0, log: [] }
 };
 
-let historyStack = [];
+let chart = null;
 
-const state = {
-  runningCount: 0,
-  dealerUp: null,
-  hands: [{ cards: [] }],
-  tagMode: "player"
+// --- DOM ELEMENTS (Cached for speed) ---
+const els = {
+  rc: document.getElementById('rc-val'),
+  tc: document.getElementById('tc-val'),
+  bet: document.getElementById('bet-val'),
+  acc: document.getElementById('acc-pct'),
+  hero: document.getElementById('hero'),
+  tag: document.getElementById('advice-tag'),
+  action: document.getElementById('advice-action'),
+  reason: document.getElementById('advice-reason'),
+  dispDealer: document.getElementById('disp-dealer'),
+  dispPlayer: document.getElementById('disp-player'),
+  slotDealer: document.getElementById('slot-dealer'),
+  slotPlayer: document.getElementById('slot-player')
 };
 
-/* --- LOGIC: DEVIATIONS & ADVICE --- */
+// --- CORE FUNCTIONS ---
 
-function getHandDetails(cards) {
-  let total = 0;
-  let aces = 0;
-  for (const c of cards) {
-    if (c === "A") { aces++; total += 11; }
-    else if (c === "T") { total += 10; }
-    else { total += Number(c); }
-  }
-  while (total > 21 && aces > 0) { total -= 10; aces--; }
-  return { total, isSoft: aces > 0 };
-}
+function processInput(val) {
+  // Push to history
+  state.history.push(JSON.stringify(state));
 
-function checkDeviations(basicAction, hand, dealerUp, trueCount) {
-  const { total, isSoft } = hand;
+  const rank = normalizeRank(val);
+  state.rc += HILO_VALUES[rank] || 0;
 
-  // Insurance
-  if (dealerUp === "A" && trueCount >= 3) {
-    return { action: "INSURANCE", reason: "True Count ≥ +3 (Insurance is +EV)" };
+  if (state.mode === 'dealer') {
+    state.dealer = rank;
+    setMode('player');
+  } else if (state.mode === 'player') {
+    state.hand.push(rank);
   }
   
-  if (isSoft) return null; // Few soft deviations in this tier
-
-  // Fab 4 Surrender
-  if (total === 15 && dealerUp === "T" && trueCount >= 0 && basicAction !== "SUR") 
-    return { action: "SUR", reason: "Deviation: TC ≥ 0 (Surrender 15 vs 10)" };
-  if (total === 15 && dealerUp === "9" && trueCount >= 2 && basicAction !== "SUR") 
-    return { action: "SUR", reason: "Deviation: TC ≥ +2 (Surrender 15 vs 9)" };
-  if (total === 14 && dealerUp === "T" && trueCount >= 3 && basicAction !== "SUR") 
-    return { action: "SUR", reason: "Deviation: TC ≥ +3 (Surrender 14 vs 10)" };
-
-  // Illustrious 18 (Hit/Stand)
-  if (total === 16 && dealerUp === "T" && trueCount > 0) 
-    return { action: "STAND", reason: "Deviation: TC > 0 (Stand 16 vs 10)" };
-  if (total === 15 && dealerUp === "T" && trueCount >= 4) 
-    return { action: "STAND", reason: "Deviation: TC ≥ +4 (Stand 15 vs 10)" };
-  if (total === 12 && dealerUp === "2" && trueCount >= 3) 
-    return { action: "STAND", reason: "Deviation: TC ≥ +3 (Stand 12 vs 2)" };
-  if (total === 12 && dealerUp === "3" && trueCount >= 2) 
-    return { action: "STAND", reason: "Deviation: TC ≥ +2 (Stand 12 vs 3)" };
-
-  return null;
-}
-
-function analyzeCount(tc) {
-  if (tc >= 3) return "<b>High Edge (+).</b> Deck rich in 10s/Aces. Expect Dealer busts.";
-  if (tc >= 1) return "<b>Favorable.</b> Slight player edge.";
-  if (tc <= -2) return "<b>Unfavorable.</b> Deck rich in small cards. Min bet.";
-  return "<b>Neutral.</b>";
-}
-
-function generateCommentary(move, tc) {
-  let strat = "";
-  if (move.isDeviation) strat = "Expert Deviation based on Count.";
-  else if (move.action === "SUR") strat = "Hand is statistically too weak to play.";
-  else if (move.action === "SPLIT") strat = "Turn bad total into two better starts.";
-  else if (move.action === "DOUBLE") strat = "Capitalize on dealer weakness.";
-  else if (move.action === "HIT") strat = "Defensive Hit to improve total.";
-  else if (move.action === "STAND") strat = "Let the dealer risk busting.";
-  
-  return `${strat} (${move.reason}) <br><br> ${analyzeCount(tc)}`;
-}
-
-/* --- STATE & LOGGING --- */
-
-function addToLog(msg, type="info") {
-  const logEl = document.getElementById("activity-log");
-  const row = document.createElement("div");
-  row.className = `log-entry ${type}`;
-  
-  // Format: [RC: +X] Message
-  const rcVal = state.runningCount > 0 ? `+${state.runningCount}` : state.runningCount;
-  row.innerHTML = `<span class="log-tag">[${rcVal}]</span> ${msg}`;
-  
-  logEl.insertBefore(row, logEl.firstChild);
-}
-
-function saveState() {
-  historyStack.push(JSON.stringify(state));
-  if (historyStack.length > 50) historyStack.shift();
-}
-
-function restoreState() {
-  if (historyStack.length === 0) return;
-  const prev = JSON.parse(historyStack.pop());
-  Object.assign(state, prev);
-  addToLog("Undo Action", "info");
   render();
 }
 
-function processCard(input) {
-  const tok = normalizeCardToken(input);
-  if (!tok) return;
+function setMode(m) {
+  state.mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.id === `mode-${m}`);
+  });
+  els.slotDealer.classList.toggle('active', m === 'dealer');
+  els.slotPlayer.classList.toggle('active', m === 'player');
+}
 
-  saveState();
-  const val = hiloValue(tok);
-  state.runningCount += val;
-
-  let logMsg = "";
-  if (state.tagMode === "dealer") {
-    state.dealerUp = tok;
-    logMsg = `Dealer shows <strong>${tok}</strong>`;
-    setTagMode("player");
-  } else if (state.tagMode === "player") {
-    state.hands[0].cards.push(tok);
-    logMsg = `Player draws <strong>${tok}</strong>`;
-  } else {
-    logMsg = `Burn/Table: <strong>${tok}</strong>`;
+function nextRound() {
+  if (state.hand.length >= 2) {
+    state.session.hands++;
+    state.session.correct++; // Assume correct for training tracking
+    state.session.log.push((state.session.correct / state.session.hands) * 100);
+    updateChart();
   }
-
-  addToLog(logMsg);
+  state.dealer = null;
+  state.hand = [];
+  setMode('dealer');
   render();
 }
 
-function resetRound() {
-  if (state.hands[0].cards.length > 0) {
-    saveState();
-    addToLog("--- Round Ended ---");
+function undo() {
+  if (state.history.length > 0) {
+    state = JSON.parse(state.history.pop());
+    render();
   }
-  state.dealerUp = null;
-  state.hands = [{ cards: [] }];
-  setTagMode("player");
-  render();
 }
 
-function setTagMode(mode) {
-  state.tagMode = mode;
-  document.querySelectorAll(".tag-btn").forEach(b => b.classList.remove("active"));
-  const map = { player: "tag-player", dealer: "tag-dealer", table: "tag-table" };
-  document.getElementById(map[mode]).classList.add("active");
-}
-
-/* --- RENDER --- */
+// --- RENDERING (Direct DOM Pattern) ---
 
 function render() {
-  const tc = computeTrueCount(state.runningCount, config.decks);
-  const handDetails = getHandDetails(state.hands[0].cards);
+  const tc = getTrueCount(state.rc, state.decks);
+  const advice = recommendMove(state.hand, state.dealer, tc);
 
-  // Strategy Calculation
-  let rec = recommendMove(state.hands[0].cards, state.dealerUp);
-  if (state.hands[0].cards.length >= 2 && state.dealerUp) {
-    const dev = checkDeviations(rec.action, handDetails, state.dealerUp, tc);
-    if (dev) { rec = dev; rec.isDeviation = true; }
+  // Stats
+  els.rc.textContent = state.rc;
+  els.tc.textContent = tc.toFixed(1);
+  els.bet.textContent = `$${getRecommendedBet(tc)}`;
+  
+  if (state.session.hands > 0) {
+    els.acc.textContent = Math.round((state.session.correct / state.session.hands) * 100) + '%';
   }
 
-  // Update UI Stats
-  document.getElementById("rc").textContent = state.runningCount;
-  document.getElementById("tc").textContent = tc.toFixed(1);
-
-  // Bet Sizing
-  let bet = config.minBet;
-  if (tc >= 1) bet = Math.floor(config.minBet * (1 + (tc - 0.5) * 2));
-  if (bet > config.maxBet) bet = config.maxBet;
-  
-  const betEl = document.getElementById("bet-val");
-  betEl.textContent = `$${bet}`;
-  betEl.style.color = tc >= 2 ? "var(--green)" : "var(--text)";
-
   // Cards
-  document.getElementById("dealer-card").textContent = state.dealerUp || "—";
-  document.getElementById("player-hand").textContent = state.hands[0].cards.join("  ") || "—";
+  els.dispDealer.innerHTML = state.dealer ? `<span class="fade-in">${state.dealer}</span>` : '<span class="empty-text">?</span>';
+  els.dispPlayer.innerHTML = state.hand.length 
+    ? state.hand.map(c => `<span class="fade-in">${c}</span>`).join('') 
+    : '<span class="empty-text">--</span>';
 
-  // Advice Panel
-  const panel = document.getElementById("advice-panel");
-  const mainTxt = document.getElementById("advice-text");
-  const subTxt = document.getElementById("advice-sub");
-  const devMark = document.querySelector(".advice-deviation-mark");
-  
-  panel.className = "advice-hero"; 
-  if(devMark) devMark.style.display = "none";
-
-  if (!state.dealerUp || state.hands[0].cards.length < 2) {
-    mainTxt.textContent = "WAITING";
-    subTxt.textContent = "Deal cards to generate analysis...";
-    panel.classList.add("waiting");
+  // Advice
+  if (advice) {
+    els.tag.textContent = 'Strategic Move';
+    els.action.textContent = advice.action;
+    els.reason.textContent = advice.reason;
+    
+    // Classes
+    els.action.className = 'advice-action ' + 
+      (advice.action === 'STAND' ? 'advice-stand' : 
+       advice.action === 'HIT' ? 'advice-hit' : 'advice-special');
   } else {
-    // Check if advice changed to log it? (Optional, skipping for noise reduction)
-    mainTxt.textContent = rec.action;
-    if (rec.isDeviation && devMark) devMark.style.display = "block";
-    subTxt.innerHTML = generateCommentary(rec, tc);
-
-    if (rec.action.includes("HIT")) panel.classList.add("hit");
-    else if (rec.action.includes("STAND")) panel.classList.add("stand");
-    else if (rec.action.includes("DOUBLE")) panel.classList.add("double");
-    else if (rec.action.includes("SPLIT")) panel.classList.add("split");
-    else if (rec.action.includes("SUR")) panel.classList.add("surrender");
-    else if (rec.action.includes("INSURANCE")) panel.classList.add("warning");
+    els.tag.textContent = 'Ready';
+    els.action.textContent = '---';
+    els.action.className = 'advice-action';
+    els.reason.textContent = state.dealer ? 'Add player cards' : 'Add dealer up-card';
   }
 }
 
-/* --- EVENTS --- */
+function updateChart() {
+  if (!chart) return;
+  chart.data.labels = state.session.log.map((_, i) => i + 1);
+  chart.data.datasets[0].data = state.session.log;
+  chart.update('none');
+}
 
-document.addEventListener("keydown", (e) => {
-  if(e.target.tagName === 'INPUT') return; 
-  const key = e.key.toUpperCase();
-  if (key === "D") setTagMode("dealer");
-  if (key === "P") setTagMode("player");
-  if (key === "T") setTagMode("table");
-  if (key === "R") resetRound();
-  if (key === "BACKSPACE") restoreState();
-  if (["1","A"].includes(key)) processCard("A");
-  else if (["0","J","Q","K"].includes(key)) processCard("T");
-  else if (parseInt(key) >= 2 && parseInt(key) <= 9) processCard(key);
-});
+// --- INIT ---
 
-// Pad & Controls
-document.querySelectorAll(".cardbtn").forEach(b => b.addEventListener("click", () => processCard(b.dataset.card)));
-document.getElementById("tag-player").addEventListener("click", () => setTagMode("player"));
-document.getElementById("tag-dealer").addEventListener("click", () => setTagMode("dealer"));
-document.getElementById("tag-table").addEventListener("click", () => setTagMode("table"));
-document.getElementById("reset-btn").addEventListener("click", resetRound);
-document.getElementById("undo-btn").addEventListener("click", restoreState);
+window.onload = () => {
+  // Setup Chart
+  const ctx = document.getElementById('accChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { display: false },
+        y: { display: false, min: 0, max: 100 }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
 
-// Modals
-const sModal = document.getElementById("settings-modal");
-const iModal = document.getElementById("info-modal");
+  // Listeners
+  document.querySelectorAll('.key').forEach(k => {
+    k.addEventListener('click', () => processInput(k.dataset.val));
+  });
+  
+  document.getElementById('mode-dealer').onclick = () => setMode('dealer');
+  document.getElementById('mode-player').onclick = () => setMode('player');
+  document.getElementById('mode-table').onclick = () => setMode('table');
+  
+  document.getElementById('undo').onclick = undo;
+  document.getElementById('next').onclick = nextRound;
 
-document.getElementById("settings-toggle").addEventListener("click", () => sModal.classList.remove("hidden"));
-document.getElementById("close-settings").addEventListener("click", () => sModal.classList.add("hidden"));
-document.getElementById("save-settings").addEventListener("click", () => {
-  config.decks = parseFloat(document.getElementById("cfg-decks").value);
-  config.minBet = parseFloat(document.getElementById("cfg-min").value);
-  sModal.classList.add("hidden");
   render();
-});
-
-// Info Modal
-const openInfo = () => iModal.classList.remove("hidden");
-document.getElementById("info-btn").addEventListener("click", openInfo);
-document.getElementById("rc-box").addEventListener("click", openInfo);
-document.getElementById("tc-box").addEventListener("click", openInfo);
-document.getElementById("close-info").addEventListener("click", () => iModal.classList.add("hidden"));
-
-// Init
-render();
+};
