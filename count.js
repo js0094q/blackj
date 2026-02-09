@@ -1,16 +1,26 @@
-export function normalizeCardToken(raw) {
+/**
+ * count.js - High-Performance Counting Module
+ */
+
+export const HILO_VALUES = {
+  '2': 1, '3': 1, '4': 1, '5': 1, '6': 1,
+  '7': 0, '8': 0, '9': 0,
+  'T': -1, 'A': -1
+};
+
+export const RANK_MAP = { '0': 'T', '10': 'T', 'J': 'T', 'Q': 'T', 'K': 'T' };
+
+export function normalizeRank(raw) {
   const s = String(raw).trim().toUpperCase();
-  if (s === "0") return "T";
-  if (["A","2","3","4","5","6","7","8","9","T"].includes(s)) return s;
-  return null;
+  return RANK_MAP[s] || s;
 }
-export function hiloValue(tok) {
-  if (tok === "A" || tok === "T") return -1;
-  const n = Number(tok);
-  if (n >= 2 && n <= 6) return +1;
-  return 0;
+
+export function getTrueCount(rc, decksRemaining) {
+  // Use a floor of 0.5 to prevent infinity/extreme spikes
+  return Math.round((rc / Math.max(0.5, decksRemaining)) * 2) / 2;
 }
-export function computeTrueCount(rc, dr) {
-  return Math.round((rc / Math.max(0.25, dr)) * 2) / 2;
+
+export function getRecommendedBet(tc, unit = 10) {
+  if (tc <= 1) return unit;
+  return Math.min(unit * 50, Math.floor(tc) * unit);
 }
-export function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
