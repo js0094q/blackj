@@ -3,63 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Blue Agent | High-Frequency Trainer</title>
+  <title>Blue Agent Pro | Trainer</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <!-- HUD: Real-time Stats -->
   <header class="topbar">
-    <div class="stats-group">
-      <div class="stat-box">
-        <div class="stat-label">RC</div>
-        <div id="rc-val" class="stat-value">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">TC</div>
-        <div id="tc-val" class="stat-value highlight">0.0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Decks</div>
-        <div id="decks-left" class="stat-value text-slate-400">6.0</div>
-      </div>
+    <div class="row">
+      <div class="title" style="font-weight:900; letter-spacing:-0.5px">BLUE AGENT <span style="color:var(--accent); font-size:10px;">PRO</span></div>
     </div>
-    <div class="stat-box">
-      <div class="stat-label">Accuracy</div>
-      <div id="acc-pct" class="stat-value">100%</div>
+    
+    <div class="counts">
+      <div class="countbox"><div class="label">RC</div><div id="rc-val" class="value">0</div></div>
+      <div class="countbox highlight"><div class="label">TC</div><div id="tc-val" class="value">0.0</div></div>
+      <div class="countbox"><div class="label">Decks</div><div id="decks-left" class="value">6.0</div></div>
     </div>
   </header>
 
-  <!-- Advice Engine -->
   <div id="hero" class="hero">
     <span id="advice-tag" class="advice-tag">Ready</span>
     <div id="advice-action" class="advice-action">---</div>
     <div id="advice-reason" class="advice-reason">Enter dealer up-card to start</div>
   </div>
 
-  <!-- Game View -->
   <div class="game-state">
-    <div class="slot-row">
-      <div id="slot-dealer" class="slot active">
-        <div class="slot-label">Dealer Up</div>
-        <div id="disp-dealer" class="slot-cards"><span class="empty-text">?</span></div>
-      </div>
-      <div id="slot-player" class="slot">
-        <div class="slot-label">Your Hand</div>
-        <div id="disp-player" class="slot-cards"><span class="empty-text">--</span></div>
-      </div>
+    <div id="slot-dealer" class="slot active">
+      <div class="slot-label">Dealer Up</div>
+      <div id="disp-dealer" class="slot-cards"><span class="empty-text">?</span></div>
+    </div>
+    <div id="slot-player" class="slot">
+      <div class="slot-label">Your Hand</div>
+      <div id="disp-player" class="slot-cards"><span class="empty-text">--</span></div>
     </div>
   </div>
 
-  <!-- Session Analytics -->
   <div class="analytics">
-    <div class="chart-wrap">
-      <canvas id="accChart"></canvas>
-    </div>
+    <div style="height:100px; width:100%"><canvas id="accChart"></canvas></div>
   </div>
 
-  <!-- Keypad & Controls -->
   <footer class="controls">
     <div class="mode-switch">
       <button id="mode-dealer" class="mode-btn active">DEALER [D]</button>
@@ -83,7 +65,7 @@
     <div class="action-row">
       <button id="undo" class="btn-undo">UNDO [U]</button>
       <button id="next" class="btn-next">NEXT HAND [SPC]</button>
-      <button id="reset-shoe" class="btn-reset">NEW SHOE [R]</button>
+      <button id="reset-shoe" class="btn-reset">RESET [R]</button>
     </div>
   </footer>
 
