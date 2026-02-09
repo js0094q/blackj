@@ -1,27 +1,25 @@
-/**
- * app.js - High-Frequency Trainer Logic
- */
 import { HILO_VALUES, normalizeRank, getTrueCount, getRecommendedBet } from './count.js';
 import { recommendMove } from './strategy-h17-ls.js';
 
-// --- STATE ---
+// --- INITIAL STATE ---
 let state = {
   rc: 0,
-  decks: 6, // Total decks in the shoe
+  totalDecks: 6,
   cardsSeen: 0,
   dealer: null,
   hand: [],
-  mode: 'dealer', // 'dealer', 'player', 'table'
+  mode: 'dealer', 
   history: [],
   session: { hands: 0, correct: 0, log: [] }
 };
 
 let chart = null;
 
-// --- DOM ELEMENTS (Cached for speed) ---
+// --- DOM ELEMENTS CACHE ---
 const els = {
   rc: document.getElementById('rc-val'),
   tc: document.getElementById('tc-val'),
+  decks: document.getElementById('decks-left'),
   bet: document.getElementById('bet-val'),
   acc: document.getElementById('acc-pct'),
   hero: document.getElementById('hero'),
@@ -34,10 +32,10 @@ const els = {
   slotPlayer: document.getElementById('slot-player')
 };
 
-// --- CORE FUNCTIONS ---
+// --- CORE HANDLERS ---
 
 function processInput(val) {
-  // Push to history
+  // Capture snapshot for undo
   state.history.push(JSON.stringify(state));
 
   const rank = normalizeRank(val);
@@ -66,7 +64,8 @@ function setMode(m) {
 function nextRound() {
   if (state.hand.length >= 2 || state.dealer) {
     state.session.hands++;
-    state.session.correct++; // Assume correct for training tracking
+    // Future expansion: Compare user input to advice for actual accuracy score
+    state.session.correct++; 
     state.session.log.push((state.session.correct / state.session.hands) * 100);
     updateChart();
   }
@@ -77,6 +76,7 @@ function nextRound() {
 }
 
 function resetShoe() {
+  if(!confirm("Reset Shoe? This will clear the Running Count and Cards Seen.")) return;
   state.rc = 0;
   state.cardsSeen = 0;
   state.dealer = null;
@@ -93,39 +93,39 @@ function undo() {
   }
 }
 
-// --- RENDERING (Direct DOM Pattern) ---
+// --- RENDERING ENGINE ---
 
 function render() {
-  // Calculate remaining decks for an accurate True Count in a 6-deck shoe
-  const decksRemaining = Math.max(0.5, state.decks - (state.cardsSeen / 52));
+  // Dynamic Shoe Math
+  const decksRemaining = Math.max(0.5, state.totalDecks - (state.cardsSeen / 52));
   const tc = getTrueCount(state.rc, decksRemaining);
   const advice = recommendMove(state.hand, state.dealer, tc);
 
-  // Stats
+  // HUD Update
   els.rc.textContent = state.rc;
   els.tc.textContent = tc.toFixed(1);
+  els.decks.textContent = decksRemaining.toFixed(1);
   els.bet.textContent = `$${getRecommendedBet(tc)}`;
   
   if (state.session.hands > 0) {
     els.acc.textContent = Math.round((state.session.correct / state.session.hands) * 100) + '%';
   }
 
-  // Cards
+  // Board Update
   els.dispDealer.innerHTML = state.dealer ? `<span class="fade-in">${state.dealer}</span>` : '<span class="empty-text">?</span>';
   els.dispPlayer.innerHTML = state.hand.length 
     ? state.hand.map(c => `<span class="fade-in">${c}</span>`).join('') 
     : '<span class="empty-text">--</span>';
 
-  // Advice
+  // Advice Hero
   if (advice) {
     els.tag.textContent = 'Strategic Move';
     els.action.textContent = advice.action;
     els.reason.textContent = advice.reason;
     
-    // Classes
+    const act = advice.action;
     els.action.className = 'advice-action ' + 
-      (advice.action === 'STAND' ? 'advice-stand' : 
-       advice.action === 'HIT' ? 'advice-hit' : 'advice-special');
+      (act === 'STAND' ? 'advice-stand' : act === 'HIT' ? 'advice-hit' : 'advice-special');
   } else {
     els.tag.textContent = 'Ready';
     els.action.textContent = '---';
@@ -134,14 +134,7 @@ function render() {
   }
 }
 
-function updateChart() {
-  if (!chart) return;
-  chart.data.labels = state.session.log.map((_, i) => i + 1);
-  chart.data.datasets[0].data = state.session.log;
-  chart.update('none');
-}
-
-// --- KEYBOARD HANDLING ---
+// --- INPUT LISTENERS ---
 
 function handleKeyboard(e) {
   const key = e.key.toLowerCase();
@@ -151,24 +144,29 @@ function handleKeyboard(e) {
   if (key === '0' || key === 't' || key === 'j' || key === 'q' || key === 'k') processInput('T');
   if (key === 'a') processInput('A');
 
-  // Controls
+  // Control Inputs
   if (key === 'enter' || key === ' ') {
     e.preventDefault();
     nextRound();
   }
-  if (key === 'backspace' || key === 'u') undo();
-  if (key === 'escape' || key === 'r') resetShoe();
+  if (key === 'u') undo();
+  if (key === 'r') resetShoe();
 
-  // Mode Switches
+  // Mode Shortcuts
   if (key === 'd') setMode('dealer');
   if (key === 'p') setMode('player');
-  if (key === 'v') setMode('table'); // 'v' for 'View' or just table cards
+  if (key === 'v') setMode('table');
 }
 
-// --- INIT ---
+function updateChart() {
+  if (!chart) return;
+  chart.data.labels = state.session.log.map((_, i) => i + 1);
+  chart.data.datasets[0].data = state.session.log;
+  chart.update('none');
+}
 
 window.onload = () => {
-  // Setup Chart
+  // Accuracy Chart
   const ctx = document.getElementById('accChart').getContext('2d');
   chart = new Chart(ctx, {
     type: 'line',
@@ -195,23 +193,15 @@ window.onload = () => {
     }
   });
 
-  // Listeners
-  document.querySelectorAll('.key').forEach(k => {
-    k.addEventListener('click', () => processInput(k.dataset.val));
-  });
-  
+  // Event Listeners
+  document.querySelectorAll('.key').forEach(k => k.addEventListener('click', () => processInput(k.dataset.val)));
   document.getElementById('mode-dealer').onclick = () => setMode('dealer');
   document.getElementById('mode-player').onclick = () => setMode('player');
   document.getElementById('mode-table').onclick = () => setMode('table');
-  
   document.getElementById('undo').onclick = undo;
   document.getElementById('next').onclick = nextRound;
+  document.getElementById('reset-shoe').onclick = resetShoe;
 
-  // Add listener for Reset Shoe (Ensure button with ID 'reset-shoe' exists in HTML)
-  const resetBtn = document.getElementById('reset-shoe');
-  if (resetBtn) resetBtn.onclick = resetShoe;
-
-  // Add Keyboard Listener
   window.addEventListener('keydown', handleKeyboard);
 
   render();
