@@ -1,7 +1,6 @@
-import { HILO_VALUES, normalizeRank, getTrueCount, getRecommendedBet } from './count.js';
+import { HILO_VALUES, normalizeRank, getTrueCount } from './count.js';
 import { recommendMove } from './strategy-h17-ls.js';
 
-// --- INITIAL STATE ---
 let state = {
   rc: 0,
   totalDecks: 6,
@@ -15,13 +14,10 @@ let state = {
 
 let chart = null;
 
-// --- DOM ELEMENTS CACHE ---
 const els = {
   rc: document.getElementById('rc-val'),
   tc: document.getElementById('tc-val'),
   decks: document.getElementById('decks-left'),
-  bet: document.getElementById('bet-val'),
-  acc: document.getElementById('acc-pct'),
   hero: document.getElementById('hero'),
   tag: document.getElementById('advice-tag'),
   action: document.getElementById('advice-action'),
@@ -32,14 +28,11 @@ const els = {
   slotPlayer: document.getElementById('slot-player')
 };
 
-// --- CORE HANDLERS ---
-
 function processInput(val) {
-  // Capture snapshot for undo
   state.history.push(JSON.stringify(state));
-
   const rank = normalizeRank(val);
-  state.rc += HILO_VALUES[rank] || 0;
+  
+  state.rc += (HILO_VALUES[rank] || 0);
   state.cardsSeen++;
 
   if (state.mode === 'dealer') {
@@ -64,7 +57,6 @@ function setMode(m) {
 function nextRound() {
   if (state.hand.length >= 2 || state.dealer) {
     state.session.hands++;
-    // Future expansion: Compare user input to advice for actual accuracy score
     state.session.correct++; 
     state.session.log.push((state.session.correct / state.session.hands) * 100);
     updateChart();
@@ -76,12 +68,8 @@ function nextRound() {
 }
 
 function resetShoe() {
-  if(!confirm("Reset Shoe? This will clear the Running Count and Cards Seen.")) return;
-  state.rc = 0;
-  state.cardsSeen = 0;
-  state.dealer = null;
-  state.hand = [];
-  state.history = [];
+  if(!confirm("Reset Shoe? This will clear all counts.")) return;
+  state.rc = 0; state.cardsSeen = 0; state.dealer = null; state.hand = []; state.history = [];
   setMode('dealer');
   render();
 }
@@ -93,69 +81,40 @@ function undo() {
   }
 }
 
-// --- RENDERING ENGINE ---
-
 function render() {
-  // Dynamic Shoe Math
-  const decksRemaining = Math.max(0.5, state.totalDecks - (state.cardsSeen / 52));
-  const tc = getTrueCount(state.rc, decksRemaining);
-  const advice = recommendMove(state.hand, state.dealer, tc);
+  const dr = Math.max(0.5, state.totalDecks - (state.cardsSeen / 52));
+  const tc = getTrueCount(state.rc, dr);
+  const move = recommendMove(state.hand, state.dealer, tc);
 
-  // HUD Update
-  els.rc.textContent = state.rc;
+  // HUD
+  els.rc.textContent = (state.rc > 0 ? "+" : "") + state.rc;
   els.tc.textContent = tc.toFixed(1);
-  els.decks.textContent = decksRemaining.toFixed(1);
-  els.bet.textContent = `$${getRecommendedBet(tc)}`;
-  
-  if (state.session.hands > 0) {
-    els.acc.textContent = Math.round((state.session.correct / state.session.hands) * 100) + '%';
-  }
+  els.decks.textContent = dr.toFixed(1);
 
-  // Board Update
+  // Cards display
   els.dispDealer.innerHTML = state.dealer ? `<span class="fade-in">${state.dealer}</span>` : '<span class="empty-text">?</span>';
   els.dispPlayer.innerHTML = state.hand.length 
     ? state.hand.map(c => `<span class="fade-in">${c}</span>`).join('') 
     : '<span class="empty-text">--</span>';
 
-  // Advice Hero
-  if (advice) {
+  // Advice
+  if (move) {
     els.tag.textContent = 'Strategic Move';
-    els.action.textContent = advice.action;
-    els.reason.textContent = advice.reason;
+    els.action.textContent = move.action;
+    els.reason.textContent = move.reason;
     
-    const act = advice.action;
-    els.action.className = 'advice-action ' + 
-      (act === 'STAND' ? 'advice-stand' : act === 'HIT' ? 'advice-hit' : 'advice-special');
+    els.action.className = 'advice-action';
+    if (move.action === 'STAND') els.action.classList.add('advice-stand');
+    else if (move.action === 'HIT') els.action.classList.add('advice-hit');
+    else if (move.action === 'DOUBLE') els.action.classList.add('advice-double');
+    else if (move.action === 'SPLIT') els.action.classList.add('advice-split');
+    else els.action.classList.add('advice-surrender');
   } else {
     els.tag.textContent = 'Ready';
     els.action.textContent = '---';
     els.action.className = 'advice-action';
     els.reason.textContent = state.dealer ? 'Add player cards' : 'Add dealer up-card';
   }
-}
-
-// --- INPUT LISTENERS ---
-
-function handleKeyboard(e) {
-  const key = e.key.toLowerCase();
-  
-  // Card Inputs
-  if (/[2-9]/.test(key)) processInput(key);
-  if (key === '0' || key === 't' || key === 'j' || key === 'q' || key === 'k') processInput('T');
-  if (key === 'a') processInput('A');
-
-  // Control Inputs
-  if (key === 'enter' || key === ' ') {
-    e.preventDefault();
-    nextRound();
-  }
-  if (key === 'u') undo();
-  if (key === 'r') resetShoe();
-
-  // Mode Shortcuts
-  if (key === 'd') setMode('dealer');
-  if (key === 'p') setMode('player');
-  if (key === 'v') setMode('table');
 }
 
 function updateChart() {
@@ -165,35 +124,27 @@ function updateChart() {
   chart.update('none');
 }
 
+function handleKeyboard(e) {
+  const k = e.key.toLowerCase();
+  if (/[2-9]/.test(k)) processInput(k);
+  if (['0','t','j','q','k'].includes(k)) processInput('T');
+  if (k === 'a') processInput('A');
+  if (k === 'enter' || k === ' ') { e.preventDefault(); nextRound(); }
+  if (k === 'u') undo();
+  if (k === 'r') resetShoe();
+  if (k === 'd') setMode('dealer');
+  if (k === 'p') setMode('player');
+  if (k === 'v') setMode('table');
+}
+
 window.onload = () => {
-  // Accuracy Chart
   const ctx = document.getElementById('accChart').getContext('2d');
   chart = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        data: [],
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: { display: false },
-        y: { display: false, min: 0, max: 100 }
-      },
-      plugins: { legend: { display: false } }
-    }
+    data: { labels: [], datasets: [{ data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: false, min: 0, max: 100 } }, plugins: { legend: { display: false } } }
   });
 
-  // Event Listeners
   document.querySelectorAll('.key').forEach(k => k.addEventListener('click', () => processInput(k.dataset.val)));
   document.getElementById('mode-dealer').onclick = () => setMode('dealer');
   document.getElementById('mode-player').onclick = () => setMode('player');
@@ -201,8 +152,6 @@ window.onload = () => {
   document.getElementById('undo').onclick = undo;
   document.getElementById('next').onclick = nextRound;
   document.getElementById('reset-shoe').onclick = resetShoe;
-
   window.addEventListener('keydown', handleKeyboard);
-
   render();
 };
