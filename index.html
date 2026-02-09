@@ -1,125 +1,91 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Blue Agent - Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blue Agent | Trainer</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<header class="topbar">
-  <div class="row">
-    <div class="title">BLUE AGENT <span style="color:var(--accent); font-size:10px;">PRO</span></div>
-    <button id="info-btn" class="icon-btn" style="margin-left:8px; font-size:14px; opacity:0.7">?</button>
-  </div>
-  
-  <div class="counts">
-    <div class="countbox" id="rc-box"><div class="label">RC</div><div id="rc" class="value">0</div></div>
-    <div class="countbox" id="tc-box"><div class="label">TC</div><div id="tc" class="value">0.0</div></div>
-    <div class="countbox highlight"><div class="label">BET</div><div id="bet-val" class="value">$10</div></div>
-  </div>
-  <button id="settings-toggle" class="icon-btn">⚙️</button>
-</header>
-
-<main class="wrap">
-  <div id="advice-panel" class="advice-hero waiting">
-    <div class="advice-top-row">
-      <div class="advice-label">STRATEGIC ACTION</div>
-      <div class="advice-deviation-mark" title="Deviation from Basic Strategy">⚠ DEV</div>
-    </div>
-    
-    <div id="advice-text" class="advice-main">WAITING</div>
-    
-    <div class="context-box">
-      <div id="advice-sub" class="advice-sub">Deal cards to begin analysis...</div>
-    </div>
-  </div>
-
-  <div class="panel tight">
-    <div class="tag-row">
-      <button id="tag-player" class="tag-btn active" title="Key: P">PLAYER</button>
-      <button id="tag-dealer" class="tag-btn" title="Key: D">DEALER</button>
-      <button id="tag-table" class="tag-btn" title="Key: T">DISCARD</button>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="row space">
-      <div style="width: 45%;">
-        <div class="label">DEALER</div>
-        <div id="dealer-card" class="card-display">—</div>
+  <!-- HUD: Real-time Stats -->
+  <header class="topbar">
+    <div class="stats-group">
+      <div class="stat-box">
+        <div class="stat-label">RC</div>
+        <div id="rc-val" class="stat-value">0</div>
       </div>
-      <div style="width: 45%; text-align:right">
-        <div class="label">PLAYER</div>
-        <div id="player-hand" class="card-display" style="color:var(--accent)">—</div>
+      <div class="stat-box">
+        <div class="stat-label">TC</div>
+        <div id="tc-val" class="stat-value highlight">0.0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Bet</div>
+        <div id="bet-val" class="stat-value emerald">$10</div>
+      </div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Accuracy</div>
+      <div id="acc-pct" class="stat-value">100%</div>
+    </div>
+  </header>
+
+  <!-- Advice Engine -->
+  <div id="hero" class="hero">
+    <span id="advice-tag" class="advice-tag">Ready</span>
+    <div id="advice-action" class="advice-action">---</div>
+    <div id="advice-reason" class="advice-reason">Enter dealer up-card to start</div>
+  </div>
+
+  <!-- Game View -->
+  <div class="game-state">
+    <div class="grid grid-cols-2 gap-3 flex">
+      <div id="slot-dealer" class="slot active w-1/2 mr-1">
+        <div class="slot-label">Dealer Up</div>
+        <div id="disp-dealer" class="slot-cards"><span class="empty-text">?</span></div>
+      </div>
+      <div id="slot-player" class="slot w-1/2 ml-1">
+        <div class="slot-label">Your Hand</div>
+        <div id="disp-player" class="slot-cards"><span class="empty-text">--</span></div>
       </div>
     </div>
   </div>
 
-  <div class="panel">
-    <div class="pad">
-      <button class="cardbtn" data-card="7">7</button>
-      <button class="cardbtn" data-card="8">8</button>
-      <button class="cardbtn" data-card="9">9</button>
-      <button class="cardbtn" data-card="4">4</button>
-      <button class="cardbtn" data-card="5">5</button>
-      <button class="cardbtn" data-card="6">6</button>
-      <button class="cardbtn" data-card="1">A</button>
-      <button class="cardbtn" data-card="2">2</button>
-      <button class="cardbtn" data-card="3">3</button>
-      <button class="cardbtn zero" data-card="T">10 / FACE</button>
+  <!-- Session Analytics -->
+  <div class="analytics">
+    <div class="chart-wrap">
+      <canvas id="accChart"></canvas>
     </div>
   </div>
 
-  <div class="row" style="margin-top: 10px;">
-    <button id="undo-btn" class="secondary-btn" title="Backspace">↶ UNDO</button>
-    <button id="reset-btn" class="reset-btn" title="Key: R">NEW ROUND</button>
-  </div>
-
-  <div class="panel log-panel">
-    <div class="label">SESSION LOG</div>
-    <div id="activity-log" class="log-container">
-      <div class="log-entry">Session started...</div>
-    </div>
-  </div>
-</main>
-
-<div id="settings-modal" class="modal hidden">
-  <div class="modal-content">
-    <h3>Configuration</h3>
-    <label><span>Decks:</span> <input type="number" id="cfg-decks" value="6" min="1" max="8"></label>
-    <label><span>Min Bet:</span> <input type="number" id="cfg-min" value="10"></label>
-    <button id="save-settings" class="action-btn">SAVE</button>
-    <button id="close-settings" class="secondary-btn" style="margin-top:8px">CLOSE</button>
-  </div>
-</div>
-
-<div id="info-modal" class="modal hidden">
-  <div class="modal-content wide">
-    <h3>Metric Definitions</h3>
-    
-    <div class="info-block">
-      <h4>RC (Running Count)</h4>
-      <p>The raw sum of cards seen so far using the <b>Hi-Lo</b> system.</p>
-      <ul>
-        <li><span style="color:var(--green)">2, 3, 4, 5, 6</span> = <b>+1</b> (Good for Player)</li>
-        <li><span style="color:var(--muted)">7, 8, 9</span> = <b>0</b> (Neutral)</li>
-        <li><span style="color:var(--red)">10, J, Q, K, A</span> = <b>-1</b> (Bad for Player)</li>
-      </ul>
+  <!-- Keypad -->
+  <footer class="controls">
+    <div class="mode-switch">
+      <button id="mode-dealer" class="mode-btn active">DEALER</button>
+      <button id="mode-player" class="mode-btn">PLAYER</button>
+      <button id="mode-table" class="mode-btn">TABLE</button>
     </div>
 
-    <div class="info-block">
-      <h4>TC (True Count)</h4>
-      <p>The definitive metric for betting and strategy.</p>
-      <div class="formula">TC = RC ÷ Decks Remaining</div>
-      <p>A high TC (e.g., +3) means the remaining deck is rich in 10s and Aces, increasing the chance of Blackjacks and dealer busts.</p>
+    <div class="keypad">
+      <button class="key" data-val="2">2</button>
+      <button class="key" data-val="3">3</button>
+      <button class="key" data-val="4">4</button>
+      <button class="key" data-val="5">5</button>
+      <button class="key" data-val="6">6</button>
+      <button class="key" data-val="7">7</button>
+      <button class="key" data-val="8">8</button>
+      <button class="key" data-val="9">9</button>
+      <button class="key" data-val="T">10</button>
+      <button class="key ace" data-val="A">A</button>
     </div>
 
-    <button id="close-info" class="action-btn">GOT IT</button>
-  </div>
-</div>
+    <div class="action-row">
+      <button id="undo" class="btn-undo">UNDO</button>
+      <button id="next" class="btn-next">NEXT ROUND</button>
+    </div>
+  </footer>
 
-<script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
