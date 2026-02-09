@@ -1,151 +1,68 @@
-/* styles.css - High-Frequency Trainer Edition */
+/* styles.css - Unified Pro Trainer Edition */
 :root {
-  --bg: #020617;
-  --panel: #0f172a;
-  --text: #f8fafc;
+  --bg: #0b0e14;
+  --panel: #161b26;
+  --text: #eef1f5;
   --muted: #64748b;
-  --border: #1e293b;
+  --border: #262f40;
   --accent: #3b82f6;
-  --success: #10b981;
-  --error: #f43f5e;
-  --warning: #f59e0b;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-body { 
-  margin: 0; 
-  background: var(--bg); 
-  color: var(--text); 
-  font-family: 'Inter', system-ui, sans-serif; 
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 /* --- HUD --- */
 .topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(2, 6, 23, 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 16px; background: rgba(11,14,20,0.95); border-bottom: 1px solid var(--border);
 }
-
-.stats-group { display: flex; gap: 12px; }
-.stat-box { text-align: center; min-width: 45px; }
-.stat-label { font-size: 8px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.stat-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; }
-.stat-value.highlight { color: var(--accent); }
-.stat-value.emerald { color: var(--success); }
+.counts { display: flex; gap: 8px; }
+.countbox { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; text-align: center; }
+.countbox.highlight { border-color: var(--accent); color: var(--accent); }
+.countbox .value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 800; }
+.countbox .label { font-size: 9px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
 
 /* --- Advice Engine --- */
 .hero {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  text-align: center;
-  transition: all 0.15s ease;
+  flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center;
 }
-
-.advice-tag { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 4px; }
-.advice-action { font-size: 72px; font-weight: 900; line-height: 1; letter-spacing: -0.04em; }
-.advice-reason { font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic; }
+.advice-tag { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; }
+.advice-action { font-size: 64px; font-weight: 900; line-height: 1; letter-spacing: -0.04em; }
+.advice-reason { font-size: 13px; color: var(--muted); margin-top: 12px; font-style: italic; max-width: 300px; }
 
 .advice-hit { color: var(--accent); }
-.advice-stand { color: var(--success); }
-.advice-special { color: var(--warning); }
+.advice-stand { color: var(--green); }
+.advice-double { color: var(--yellow); }
+.advice-split { color: #a855f7; }
+.advice-surrender { color: var(--red); }
 
-/* --- Game State Slots --- */
-.game-state {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  padding: 0 16px 16px;
-}
-.slot-row { display: flex; gap: 12px; }
-.slot {
-  flex: 1;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
-  border-left: 3px solid var(--muted);
-  transition: border-color 0.2s;
-}
+/* --- Game Slots --- */
+.game-state { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 16px; }
+.slot { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; border-left: 3px solid var(--muted); transition: border-color 0.2s; }
 .slot.active { border-left-color: var(--accent); border-color: rgba(59, 130, 246, 0.3); }
-.slot-label { font-size: 8px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
-.slot-cards { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; height: 32px; display: flex; align-items: center; gap: 4px; }
-.empty-text { color: #1e293b; font-style: italic; font-size: 14px; }
+.slot-label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+.slot-cards { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; height: 36px; display: flex; align-items: center; gap: 6px; }
+.empty-text { color: #262f40; font-style: italic; font-size: 14px; }
 
-/* --- Keypad & Controls --- */
-.controls {
-  background: #020617;
-  border-top: 1px solid var(--border);
-  padding: 16px;
-}
-.mode-switch {
-  display: flex;
-  background: #000;
-  padding: 3px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
-.mode-btn {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+/* --- Analytics & Keypad --- */
+.analytics { padding: 0 16px; margin-bottom: 8px; height: 100px; }
+.controls { background: #020617; border-top: 1px solid var(--border); padding: 16px; }
+.mode-switch { display: flex; background: #000; padding: 3px; border-radius: 8px; margin-bottom: 12px; }
+.mode-btn { flex: 1; background: transparent; border: none; color: var(--muted); font-size: 10px; font-weight: 800; padding: 10px; border-radius: 6px; cursor: pointer; }
 .mode-btn.active { background: var(--accent); color: white; }
 
-.keypad {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.key {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 18px;
-  font-weight: 700;
-  height: 52px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.05s;
-}
-.key:active { transform: scale(0.92); background: #1e293b; }
-.key.ace { color: var(--accent); border-color: rgba(59, 130, 246, 0.3); }
+.keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+.key { background: #1e2532; border: 1px solid var(--border); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; height: 50px; border-radius: 8px; cursor: pointer; }
+.key:active { transform: scale(0.92); background: var(--accent); }
+.key.ace { color: var(--accent); }
 
-/* Updated Action Row Styles */
-.action-row { display: flex; gap: 6px; }
-.btn-undo { flex: 1; background: #000; border: 1px solid var(--border); color: var(--muted); font-size: 9px; font-weight: 800; border-radius: 8px; height: 44px; cursor: pointer; }
-.btn-next { flex: 2; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--accent); font-size: 9px; font-weight: 800; border-radius: 8px; height: 44px; cursor: pointer; }
-.btn-reset { flex: 1; background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.2); color: #f43f5e; font-size: 9px; font-weight: 800; border-radius: 8px; height: 44px; cursor: pointer; }
+.action-row { display: flex; gap: 8px; }
+.btn-undo { flex: 1; background: #000; border: 1px solid var(--border); color: var(--muted); font-size: 10px; font-weight: 800; border-radius: 8px; height: 48px; }
+.btn-next { flex: 2; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--accent); font-size: 10px; font-weight: 800; border-radius: 8px; height: 48px; }
+.btn-reset { flex: 1; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--red); font-size: 10px; font-weight: 800; border-radius: 8px; height: 48px; }
 
-/* --- Analytics --- */
-.analytics { padding: 0 16px; margin-bottom: 8px; }
-.chart-wrap { height: 100px; width: 100%; position: relative; }
-
-/* Desktop Keyboard Hint Styling */
-@media (min-width: 768px) {
-  .mode-btn::after { content: ""; font-size: 8px; opacity: 0.5; margin-left: 4px; }
-}
-
-.fade-in { animation: fadeIn 0.1s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.15s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
