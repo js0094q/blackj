@@ -1,10 +1,9 @@
 /**
- * strategy-h17-ls.js - O(1) Matrix Strategy Engine
+ * strategy-h17-ls.js - High-Performance O(1) Matrix
  */
 
 const S = 'STAND', H = 'HIT', D = 'DOUBLE', P = 'SPLIT', R = 'SURRENDER';
 
-// Pre-compiled Strategy Matrix for H17 / 6-Deck / DAS
 const MATRIX = {
   hard: {
     17: { default: S },
@@ -48,19 +47,16 @@ export function recommendMove(playerCards, dealerUp, tc = 0) {
   const d = dealerUp;
   const { total, isSoft, isPair, pairRank } = analyzeHandFast(playerCards);
 
-  // 1. Insurance Deviation
-  if (d === 'A' && tc >= 3.0) return { action: 'INSURE', reason: 'Deviation: TC ≥ 3' };
+  // Insurance Deviation
+  if (d === 'A' && tc >= 3.0) return { action: 'INSURE', reason: 'Deviation: TC ≥ +3' };
 
-  // 2. Specific I-18 Deviations
+  // Common Deviations (I-18)
   if (total === 16 && d === 'T' && tc >= 0) return { action: S, reason: 'Deviation: TC ≥ 0' };
   if (total === 15 && d === 'T' && tc >= 4) return { action: S, reason: 'Deviation: TC ≥ 4' };
-  if (total === 12 && d === '2' && tc >= 3) return { action: S, reason: 'Deviation: TC ≥ 3' };
-  if (total === 10 && d === 'T' && tc >= 4) return { action: D, reason: 'Deviation: TC ≥ 4' };
 
-  // 3. Matrix Lookup
   let move = H;
   if (isPair && playerCards.length === 2) {
-    move = MATRIX.pair[pairRank][d] || MATRIX.pair[pairRank].default;
+    move = MATRIX.pair[pairRank]?.[d] || MATRIX.pair[pairRank]?.default;
   } else if (isSoft) {
     move = MATRIX.soft[total]?.[d] || MATRIX.soft[total]?.default || H;
   } else {
@@ -69,7 +65,7 @@ export function recommendMove(playerCards, dealerUp, tc = 0) {
     else move = MATRIX.hard[total]?.[d] || MATRIX.hard[total]?.default || H;
   }
 
-  // Handle Double/Split after Hit restriction (simplified)
+  // Double/Split prevention after third card
   if (playerCards.length > 2 && (move === D || move === P)) move = H;
 
   return { action: move, reason: 'Basic Strategy' };
@@ -77,8 +73,7 @@ export function recommendMove(playerCards, dealerUp, tc = 0) {
 
 function analyzeHandFast(cards) {
   let total = 0, aces = 0;
-  for (let i = 0; i < cards.length; i++) {
-    const c = cards[i];
+  for (const c of cards) {
     if (c === 'A') { total += 11; aces++; }
     else if (c === 'T') { total += 10; }
     else { total += Number(c); }
