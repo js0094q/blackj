@@ -1,121 +1,93 @@
-export function recommendMove(playerCards, dealerUp, opts = {}) {
-  const rules = { dealerHitsSoft17: true, lateSurrender: true, doubleAfterSplit: true, ...opts };
+/**
+ * strategy-h17-ls.js - O(1) Matrix Strategy Engine
+ */
 
-  if (!dealerUp || !playerCards || playerCards.length < 2) {
-    return { action: null, reason: "Waiting for cards..." };
+const S = 'STAND', H = 'HIT', D = 'DOUBLE', P = 'SPLIT', R = 'SURRENDER';
+
+// Pre-compiled Strategy Matrix for H17 / 6-Deck / DAS
+const MATRIX = {
+  hard: {
+    17: { default: S },
+    16: { '2':S, '3':S, '4':S, '5':S, '6':S, '9':R, 'T':R, 'A':R, default: H },
+    15: { '2':S, '3':S, '4':S, '5':S, '6':S, 'T':R, 'A':R, default: H },
+    14: { '2':S, '3':S, '4':S, '5':S, '6':S, default: H },
+    13: { '2':S, '3':S, '4':S, '5':S, '6':S, default: H },
+    12: { '4':S, '5':S, '6':S, default: H },
+    11: { default: D },
+    10: { 'T':H, 'A':H, default: D },
+    9:  { '3':D, '4':D, '5':D, '6':D, default: H },
+    8:  { default: H }
+  },
+  soft: {
+    20: { default: S },
+    19: { '6':D, default: S },
+    18: { '2':S, '3':D, '4':D, '5':D, '6':D, '7':S, '8':S, default: H },
+    17: { '3':D, '4':D, '5':D, '6':D, default: H },
+    16: { '4':D, '5':D, '6':D, default: H },
+    15: { '4':D, '5':D, '6':D, default: H },
+    14: { '5':D, '6':D, default: H },
+    13: { '5':D, '6':D, default: H }
+  },
+  pair: {
+    'A': { default: P },
+    'T': { default: S },
+    '9': { '7':S, 'T':S, 'A':S, default: P },
+    '8': { default: P },
+    '7': { '8':H, '9':H, 'T':H, 'A':H, default: P },
+    '6': { '2':P, '3':P, '4':P, '5':P, '6':P, default: H },
+    '5': { 'T':H, 'A':H, default: D },
+    '4': { '5':P, '6':P, default: H },
+    '3': { '2':P, '3':P, '4':P, '5':P, '6':P, '7':P, default: H },
+    '2': { '2':P, '3':P, '4':P, '5':P, '6':P, '7':P, default: H }
+  }
+};
+
+export function recommendMove(playerCards, dealerUp, tc = 0) {
+  if (!dealerUp || playerCards.length < 2) return null;
+
+  const d = dealerUp;
+  const { total, isSoft, isPair, pairRank } = analyzeHandFast(playerCards);
+
+  // 1. Insurance Deviation
+  if (d === 'A' && tc >= 3.0) return { action: 'INSURE', reason: 'Deviation: TC ≥ 3' };
+
+  // 2. Specific I-18 Deviations
+  if (total === 16 && d === 'T' && tc >= 0) return { action: S, reason: 'Deviation: TC ≥ 0' };
+  if (total === 15 && d === 'T' && tc >= 4) return { action: S, reason: 'Deviation: TC ≥ 4' };
+  if (total === 12 && d === '2' && tc >= 3) return { action: S, reason: 'Deviation: TC ≥ 3' };
+  if (total === 10 && d === 'T' && tc >= 4) return { action: D, reason: 'Deviation: TC ≥ 4' };
+
+  // 3. Matrix Lookup
+  let move = H;
+  if (isPair && playerCards.length === 2) {
+    move = MATRIX.pair[pairRank][d] || MATRIX.pair[pairRank].default;
+  } else if (isSoft) {
+    move = MATRIX.soft[total]?.[d] || MATRIX.soft[total]?.default || H;
+  } else {
+    if (total >= 17) move = S;
+    else if (total <= 8) move = H;
+    else move = MATRIX.hard[total]?.[d] || MATRIX.hard[total]?.default || H;
   }
 
-  const up = normRank(dealerUp);
-  const hand = analyzeHand(playerCards);
+  // Handle Double/Split after Hit restriction (simplified)
+  if (playerCards.length > 2 && (move === D || move === P)) move = H;
 
-  // 1) Late surrender (First two cards only)
-  const canSurrender = rules.lateSurrender && playerCards.length === 2;
-  if (canSurrender && shouldLateSurrender_H17_6D(hand, up)) {
-    return { action: "SUR", reason: "Late surrender (6D H17)." };
+  return { action: move, reason: 'Basic Strategy' };
+}
+
+function analyzeHandFast(cards) {
+  let total = 0, aces = 0;
+  for (let i = 0; i < cards.length; i++) {
+    const c = cards[i];
+    if (c === 'A') { total += 11; aces++; }
+    else if (c === 'T') { total += 10; }
+    else { total += Number(c); }
   }
-
-  // 2) Split
-  if (hand.isPair) {
-    const split = splitDecision(hand.pairRank, up, rules);
-    if (split === "SPLIT") return { action: "SPLIT", reason: "Pair splitting chart." };
-  }
-
-  // 3) Double
-  const dbl = doubleDecision(hand, up, rules);
-  if (dbl === "DOUBLE") return { action: "DOUBLE", reason: "Doubling chart." };
-
-  // 4) Hit/Stand
-  const hs = hitStandDecision(hand, up);
-  return { action: hs, reason: "Basic Strategy." };
+  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  return {
+    total,
+    isSoft: aces > 0,
+    isPair: cards.length === 2 && cards[0] === cards[1],
+    pairRank: cards[0]
+  };
 }
-
-/* --- LOGIC HELPERS --- */
-function shouldLateSurrender_H17_6D(hand, dealerUp) {
-  if (hand.isSoft) return false;
-  // 15 vs 10/A, 16 vs 9/10/A, 17 vs A, 8,8 vs A
-  if (hand.isPair && hand.pairRank === 8 && dealerUp === "A") return true;
-  const t = hand.hardTotal;
-  if (t === 17 && dealerUp === "A") return true;
-  if (t === 16 && (dealerUp === "9" || dealerUp === "T" || dealerUp === "A")) return true;
-  if (t === 15 && (dealerUp === "T" || dealerUp === "A")) return true;
-  return false;
-}
-
-function splitDecision(pairRank, dealerUp, rules) {
-  const up = dealerUp;
-  if (pairRank === 11) return "SPLIT"; 
-  if (pairRank === 8) return "SPLIT"; 
-  if (pairRank === 5) return "HIT"; 
-  if (pairRank === 10) return "HIT"; 
-  if (pairRank === 2 || pairRank === 3) return isUpIn(up, ["2","3","4","5","6","7"]) ? "SPLIT" : "HIT";
-  if (pairRank === 4) return (rules.doubleAfterSplit && isUpIn(up, ["5","6"])) ? "SPLIT" : "HIT";
-  if (pairRank === 6) return isUpIn(up, ["2","3","4","5","6"]) ? "SPLIT" : "HIT";
-  if (pairRank === 7) return isUpIn(up, ["2","3","4","5","6","7"]) ? "SPLIT" : "HIT";
-  if (pairRank === 9) return isUpIn(up, ["2","3","4","5","6","8","9"]) ? "SPLIT" : "STAND";
-  return "HIT";
-}
-
-function doubleDecision(hand, dealerUp, rules) {
-  const up = dealerUp;
-  if (hand.isSoft) {
-    const s = hand.softTotal;
-    if ((s === 13 || s === 14) && isUpIn(up, ["5","6"])) return "DOUBLE";
-    if ((s === 15 || s === 16) && isUpIn(up, ["4","5","6"])) return "DOUBLE";
-    if (s === 17 && isUpIn(up, ["3","4","5","6"])) return "DOUBLE";
-    if (s === 18 && isUpIn(up, ["2","3","4","5","6"])) return "DOUBLE";
-    if (s === 19 && up === "6") return "DOUBLE"; 
-    return null;
-  }
-  const t = hand.hardTotal;
-  if (t === 9 && isUpIn(up, ["3","4","5","6"])) return "DOUBLE";
-  if (t === 10 && isUpIn(up, ["2","3","4","5","6","7","8","9"])) return "DOUBLE";
-  if (t === 11) return "DOUBLE";
-  return null;
-}
-
-function hitStandDecision(hand, dealerUp) {
-  const up = dealerUp;
-  if (hand.isSoft) {
-    const s = hand.softTotal;
-    if (s >= 19) return "STAND";
-    if (s === 18) return isUpIn(up, ["2","7","8"]) ? "STAND" : "HIT";
-    return "HIT";
-  }
-  const t = hand.hardTotal;
-  if (t >= 17) return "STAND";
-  if (t >= 13 && t <= 16) return isUpIn(up, ["2","3","4","5","6"]) ? "STAND" : "HIT";
-  if (t === 12) return isUpIn(up, ["4","5","6"]) ? "STAND" : "HIT";
-  return "HIT";
-}
-
-function analyzeHand(cards) {
-  const ranks = cards.map(normRank);
-  const vals = ranks.map(rankValue);
-  const isPair = ranks.length === 2 && ranks[0] === ranks[1];
-  const pairRank = isPair ? pairRankValue(ranks[0]) : null;
-  const totals = computeTotals(vals, ranks);
-  const under = totals.filter(t => t <= 21);
-  const best = under.length ? Math.max(...under) : Math.min(...totals);
-  const hardTotal = vals.reduce((a, b) => a + b, 0);
-  const hasAce = ranks.includes("A");
-  const isSoft = hasAce && totals.some(t => t <= 21 && t !== hardTotal);
-  return { ranks, isPair, pairRank, hardTotal, isSoft, softTotal: best };
-}
-
-function computeTotals(vals, ranks) {
-  let total = vals.reduce((a, b) => a + b, 0);
-  const aceCount = ranks.filter(r => r === "A").length;
-  const totals = [total];
-  for (let i = 1; i <= aceCount; i++) totals.push(total + i * 10);
-  return totals;
-}
-
-function normRank(x) {
-  const s = String(x).trim().toUpperCase();
-  if (s === "0") return "T";
-  if (["A","2","3","4","5","6","7","8","9","T"].includes(s)) return s;
-  return s;
-}
-function rankValue(r) { return r === "A" ? 1 : (r === "T" ? 10 : Number(r)); }
-function pairRankValue(r) { return r === "A" ? 11 : (r === "T" ? 10 : Number(r)); }
-function isUpIn(up, arr) { return arr.includes(up) || arr.includes(Number(up)); }
