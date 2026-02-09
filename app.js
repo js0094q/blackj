@@ -7,7 +7,8 @@ import { recommendMove } from './strategy-h17-ls.js';
 // --- STATE ---
 let state = {
   rc: 0,
-  decks: 6,
+  decks: 6, // Total decks in the shoe
+  cardsSeen: 0,
   dealer: null,
   hand: [],
   mode: 'dealer', // 'dealer', 'player', 'table'
@@ -41,6 +42,7 @@ function processInput(val) {
 
   const rank = normalizeRank(val);
   state.rc += HILO_VALUES[rank] || 0;
+  state.cardsSeen++;
 
   if (state.mode === 'dealer') {
     state.dealer = rank;
@@ -62,7 +64,7 @@ function setMode(m) {
 }
 
 function nextRound() {
-  if (state.hand.length >= 2) {
+  if (state.hand.length >= 2 || state.dealer) {
     state.session.hands++;
     state.session.correct++; // Assume correct for training tracking
     state.session.log.push((state.session.correct / state.session.hands) * 100);
@@ -70,6 +72,16 @@ function nextRound() {
   }
   state.dealer = null;
   state.hand = [];
+  setMode('dealer');
+  render();
+}
+
+function resetShoe() {
+  state.rc = 0;
+  state.cardsSeen = 0;
+  state.dealer = null;
+  state.hand = [];
+  state.history = [];
   setMode('dealer');
   render();
 }
@@ -84,7 +96,9 @@ function undo() {
 // --- RENDERING (Direct DOM Pattern) ---
 
 function render() {
-  const tc = getTrueCount(state.rc, state.decks);
+  // Calculate remaining decks for an accurate True Count in a 6-deck shoe
+  const decksRemaining = Math.max(0.5, state.decks - (state.cardsSeen / 52));
+  const tc = getTrueCount(state.rc, decksRemaining);
   const advice = recommendMove(state.hand, state.dealer, tc);
 
   // Stats
@@ -125,6 +139,30 @@ function updateChart() {
   chart.data.labels = state.session.log.map((_, i) => i + 1);
   chart.data.datasets[0].data = state.session.log;
   chart.update('none');
+}
+
+// --- KEYBOARD HANDLING ---
+
+function handleKeyboard(e) {
+  const key = e.key.toLowerCase();
+  
+  // Card Inputs
+  if (/[2-9]/.test(key)) processInput(key);
+  if (key === '0' || key === 't' || key === 'j' || key === 'q' || key === 'k') processInput('T');
+  if (key === 'a') processInput('A');
+
+  // Controls
+  if (key === 'enter' || key === ' ') {
+    e.preventDefault();
+    nextRound();
+  }
+  if (key === 'backspace' || key === 'u') undo();
+  if (key === 'escape' || key === 'r') resetShoe();
+
+  // Mode Switches
+  if (key === 'd') setMode('dealer');
+  if (key === 'p') setMode('player');
+  if (key === 'v') setMode('table'); // 'v' for 'View' or just table cards
 }
 
 // --- INIT ---
@@ -168,6 +206,13 @@ window.onload = () => {
   
   document.getElementById('undo').onclick = undo;
   document.getElementById('next').onclick = nextRound;
+
+  // Add listener for Reset Shoe (Ensure button with ID 'reset-shoe' exists in HTML)
+  const resetBtn = document.getElementById('reset-shoe');
+  if (resetBtn) resetBtn.onclick = resetShoe;
+
+  // Add Keyboard Listener
+  window.addEventListener('keydown', handleKeyboard);
 
   render();
 };
