@@ -1,6 +1,3 @@
-// Basic strategy (6D, H17, LS assumed in matrix) + a few Hi-Lo deviations.
-// This module recommends an action; it does not simulate table rules (splits, dealer draws, etc.).
-
 const S = 'STAND', H = 'HIT', D = 'DOUBLE', P = 'SPLIT', R = 'SURRENDER', I = 'INSURE';
 
 const MATRIX = {
@@ -40,78 +37,6 @@ const MATRIX = {
   }
 };
 
-function baseStrategyAction(hand, up) {
-  const { total, isSoft, isPair, pairRank } = analyze(hand);
-
-  let action = H;
-  let family = 'hard';
-
-  if (isPair && hand.length === 2) {
-    family = 'pair';
-    action = MATRIX.pair[pairRank]?.[up] || MATRIX.pair[pairRank]?.default || H;
-  } else if (isSoft) {
-    family = 'soft';
-    action = MATRIX.soft[total]?.[up] || MATRIX.soft[total]?.default || H;
-  } else {
-    family = 'hard';
-    if (total >= 17) action = S;
-    else if (total <= 8) action = H;
-    else action = MATRIX.hard[total]?.[up] || MATRIX.hard[total]?.default || H;
-  }
-
-  // Simplification: if user has more than 2 cards, we disallow DOUBLE/SPLIT suggestions.
-  if (hand.length > 2 && (action === D || action === P)) action = H;
-
-  return { action, family, total, isSoft, isPair, pairRank };
-}
-
-function deviation(hand, up, tc, base) {
-  // Keep deviations minimal and explicit.
-  // Return {action, name, rule} or null.
-
-  // Insurance vs Ace at TC >= +3
-  if (up === 'A' && tc >= 3.0) {
-    return { action: I, name: 'Insurance', rule: 'TC ≥ +3.0' };
-  }
-
-  // 16 vs T: stand at TC >= 0
-  if (base.total === 16 && up === 'T' && tc >= 0) {
-    return { action: S, name: '16 vs T', rule: 'TC ≥ 0.0' };
-  }
-
-  // 15 vs T: stand at TC >= +4
-  if (base.total === 15 && up === 'T' && tc >= 4) {
-    return { action: S, name: '15 vs T', rule: 'TC ≥ +4.0' };
-  }
-
-  return null;
-}
-
-export function recommendMove(hand, up, tc) {
-  if (!up || hand.length < 2) return null;
-
-  const base = baseStrategyAction(hand, up);
-  const dev = deviation(hand, up, tc, base);
-
-  if (dev) {
-    return {
-      action: dev.action,
-      baseAction: base.action,
-      deviation: `${dev.name} (${dev.rule})`,
-      reason: `Deviation: ${dev.name}, ${dev.rule}`,
-      details: { total: base.total, isSoft: base.isSoft, isPair: base.isPair, family: base.family }
-    };
-  }
-
-  return {
-    action: base.action,
-    baseAction: base.action,
-    deviation: null,
-    reason: 'Basic Strategy',
-    details: { total: base.total, isSoft: base.isSoft, isPair: base.isPair, family: base.family }
-  };
-}
-
 function analyze(cards) {
   let total = 0, aces = 0;
   for (const c of cards) {
@@ -126,4 +51,38 @@ function analyze(cards) {
     isPair: cards.length === 2 && cards[0] === cards[1],
     pairRank: cards[0]
   };
+}
+
+function baseStrategyAction(hand, up) {
+  const a = analyze(hand);
+  let action = H;
+
+  if (a.isPair && hand.length === 2) {
+    action = MATRIX.pair[a.pairRank]?.[up] || MATRIX.pair[a.pairRank]?.default || H;
+  } else if (a.isSoft) {
+    action = MATRIX.soft[a.total]?.[up] || MATRIX.soft[a.total]?.default || H;
+  } else {
+    if (a.total >= 17) action = S;
+    else if (a.total <= 8) action = H;
+    else action = MATRIX.hard[a.total]?.[up] || MATRIX.hard[a.total]?.default || H;
+  }
+
+  if (hand.length > 2 && (action === D || action === P)) action = H;
+  return { action, total: a.total, isSoft: a.isSoft, isPair: a.isPair };
+}
+
+function deviation(up, tc, base) {
+  if (up === 'A' && tc >= 3.0) return { action: I, rule: 'Insurance TC ≥ +3.0' };
+  if (base.total === 16 && up === 'T' && tc >= 0.0) return { action: S, rule: '16 vs T TC ≥ 0.0' };
+  if (base.total === 15 && up === 'T' && tc >= 4.0) return { action: S, rule: '15 vs T TC ≥ +4.0' };
+  return null;
+}
+
+export function recommendMove(hand, up, tc) {
+  if (!up || hand.length < 2) return null;
+  const base = baseStrategyAction(hand, up);
+  const dev = deviation(up, tc, base);
+  return dev
+    ? { action: dev.action, baseAction: base.action, deviation: dev.rule }
+    : { action: base.action, baseAction: base.action, deviation: null };
 }
