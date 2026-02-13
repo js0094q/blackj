@@ -6,6 +6,6 @@ export function normalizeRank(raw) {
   return RANK_MAP[s] || s;
 }
 
-export function getTrueCount(rc, dr) {
-  return Math.round((rc / Math.max(0.25, dr)) * 2) / 2;
+export function getTrueCount(rc, decksRemaining) {
+  return Math.round((rc / Math.max(0.25, decksRemaining)) * 2) / 2;
 }
