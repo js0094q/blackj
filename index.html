@@ -13,7 +13,7 @@
     <div class="row">
       <div class="title" style="font-weight:900; letter-spacing:-0.5px">BLUE AGENT <span style="color:var(--accent); font-size:10px;">PRO</span></div>
     </div>
-    
+
     <div class="counts">
       <div class="countbox"><div class="label">RC</div><div id="rc-val" class="value">0</div></div>
       <div class="countbox highlight"><div class="label">TC</div><div id="tc-val" class="value">0.0</div></div>
@@ -25,6 +25,10 @@
     <span id="advice-tag" class="advice-tag">Ready</span>
     <div id="advice-action" class="advice-action">---</div>
     <div id="advice-reason" class="advice-reason">Enter dealer up-card to start</div>
+  </div>
+
+  <div class="micro-help">
+    Log your decision: <strong>H</strong>it, <strong>S</strong>tand, <strong>D</strong>ouble, <strong>P</strong>split, Su<strong>r</strong>render, <strong>I</strong>nsure. Toggle Auto-next: <strong>M</strong>.
   </div>
 
   <div class="game-state">
@@ -65,9 +69,55 @@
     <div class="action-row">
       <button id="undo" class="btn-undo">UNDO [U]</button>
       <button id="next" class="btn-next">NEXT HAND [SPC]</button>
-      <button id="reset-shoe" class="btn-reset">RESET [R]</button>
+      <button id="reset-shoe" class="btn-reset">RESET [X]</button>
     </div>
   </footer>
+
+  <div id="tableOverlay" class="overlay" role="dialog" aria-label="Table view" aria-modal="false">
+    <div class="overlay-inner">
+      <div class="overlay-head">
+        <div class="overlay-title">TABLE VIEW</div>
+        <button id="ov-close" class="overlay-close" type="button">Close [Esc]</button>
+      </div>
+
+      <div class="overlay-grid">
+        <section class="ov-card">
+          <div class="ov-card-title">Current</div>
+          <div id="ov-summary" class="ov-block"></div>
+        </section>
+
+        <section class="ov-card">
+          <div class="ov-card-title">Deviations</div>
+          <div id="ov-deviations" class="ov-block"></div>
+        </section>
+
+        <section class="ov-card">
+          <div class="ov-card-title">Session</div>
+          <div id="ov-stats" class="ov-block"></div>
+        </section>
+
+        <section class="ov-card ov-log">
+          <div class="ov-card-title">Hand Log (latest first)</div>
+          <div class="ov-table-wrap">
+            <table class="ov-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Up</th>
+                  <th>Hand</th>
+                  <th>TC</th>
+                  <th>Rec</th>
+                  <th>You</th>
+                  <th>OK</th>
+                </tr>
+              </thead>
+              <tbody id="ov-log-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="./app.js"></script>
 </body>
