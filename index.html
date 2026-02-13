@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Blue Agent Pro | Trainer</title>
+  <title>Blackj | Trainer</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,7 +11,7 @@
 
   <header class="topbar">
     <div class="row">
-      <div class="title" style="font-weight:900; letter-spacing:-0.5px">BLUE AGENT <span style="color:var(--accent); font-size:10px;">PRO</span></div>
+      <div class="title">BLACKJ <span class="tiny-badge">TRAINER</span></div>
     </div>
 
     <div class="counts">
@@ -21,14 +21,14 @@
     </div>
   </header>
 
-  <div id="hero" class="hero">
+  <div class="hero">
     <span id="advice-tag" class="advice-tag">Ready</span>
     <div id="advice-action" class="advice-action">---</div>
     <div id="advice-reason" class="advice-reason">Enter dealer up-card to start</div>
   </div>
 
   <div class="micro-help">
-    Log your decision: <strong>H</strong>it, <strong>S</strong>tand, <strong>D</strong>ouble, <strong>P</strong>split, Su<strong>r</strong>render, <strong>I</strong>nsure. Toggle Auto-next: <strong>M</strong>.
+    Log decisions with H/S/D/P/R/I. Toggle modes: G (dealer), L (player), V (table). Other: U (undo), X (reset), M (auto-next).
   </div>
 
   <div class="game-state">
@@ -43,13 +43,13 @@
   </div>
 
   <div class="analytics">
-    <div style="height:100px; width:100%"><canvas id="accChart"></canvas></div>
+    <div class="chart-wrap"><canvas id="accChart"></canvas></div>
   </div>
 
   <footer class="controls">
     <div class="mode-switch">
-      <button id="mode-dealer" class="mode-btn active">DEALER [D]</button>
-      <button id="mode-player" class="mode-btn">PLAYER [P]</button>
+      <button id="mode-dealer" class="mode-btn active">DEALER [G]</button>
+      <button id="mode-player" class="mode-btn">PLAYER [L]</button>
       <button id="mode-table" class="mode-btn">TABLE [V]</button>
     </div>
 
@@ -72,6 +72,11 @@
       <button id="reset-shoe" class="btn-reset">RESET [X]</button>
     </div>
   </footer>
+
+  <!-- Subtle key map watermark (centered) -->
+  <div id="keymap-watermark" class="keymap-watermark">
+    Cards: 2–9/T/A &nbsp;|&nbsp; Dealer: G &nbsp;|&nbsp; Player: L &nbsp;|&nbsp; Decisions: H/S/D/P/R/I &nbsp;|&nbsp; Undo: U &nbsp;|&nbsp; Reset: X &nbsp;|&nbsp; Table: V &nbsp;|&nbsp; Auto-Next: M
+  </div>
 
   <div id="tableOverlay" class="overlay" role="dialog" aria-label="Table view" aria-modal="false">
     <div class="overlay-inner">
