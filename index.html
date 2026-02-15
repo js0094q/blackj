@@ -1,169 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Blackj | Pro Trainer</title>
-  <link rel="stylesheet" href="./styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackj | Pro Trainer</title>
+<link rel="stylesheet" href="./styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-title">BLACKJ</div>
-      <div class="brand-sub">PRO TRAINER · 6D H17 LS</div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-title">BLACKJ</div>
+    <div class="brand-sub">PRO ANALYTICS · 6D H17 LS</div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">RC</div>
+      <div id="rc-val" class="hud-val">0</div>
     </div>
-
-    <div class="hud">
-      <div class="hud-box">
-        <div class="hud-label">RC</div>
-        <div id="rc-val" class="hud-val">0</div>
-      </div>
-      <div class="hud-box hud-focus">
-        <div class="hud-label">TC</div>
-        <div id="tc-val" class="hud-val">0.0</div>
-      </div>
-      <div class="hud-box">
-        <div class="hud-label">DECKS</div>
-        <div id="decks-left" class="hud-val">6.0</div>
-      </div>
+    <div class="hud-box hud-focus">
+      <div class="hud-label">TC</div>
+      <div id="tc-val" class="hud-val">0.0</div>
     </div>
-  </header>
+    <div class="hud-box">
+      <div class="hud-label">DECKS</div>
+      <div id="decks-left" class="hud-val">6.0</div>
+    </div>
+  </div>
+</header>
 
-  <main class="main">
-    <section class="primary">
-      <div class="action-card">
-        <div class="action-top">
-          <div id="state-tag" class="tag">READY</div>
-          <div id="dev-tag" class="tag tag-muted">NO DEVIATION</div>
-        </div>
+<main class="main">
 
-        <div class="action-mid">
-          <div class="action-label">RECOMMENDED</div>
-          <div id="rec-action" class="action-val">---</div>
-          <div id="rec-reason" class="action-reason">Enter dealer up-card (G), then player cards (L).</div>
-        </div>
+<section class="primary">
 
-        <div class="action-bottom">
-          <div class="state-line">
-            <div class="state-k">Dealer</div>
-            <div id="disp-dealer" class="state-v">?</div>
-          </div>
-          <div class="state-line">
-            <div class="state-k">Hand</div>
-            <div id="disp-player" class="state-v">--</div>
-          </div>
-        </div>
-      </div>
+<div class="action-card">
 
-      <div class="key-hint">
-        Cards: 2–9, T (or 0/J/Q/K), A · Modes: G dealer, L player · Log: H/S/D/P/R/I · U undo · Space next · O overlay · X reset · M auto-next
-      </div>
-    </section>
+  <div class="action-top">
+    <div id="state-tag" class="tag">READY</div>
+    <div id="dev-tag" class="tag tag-muted">NO DEVIATION</div>
+  </div>
 
-    <aside class="side">
-      <div class="panel">
-        <div class="panel-title">SESSION ANALYTICS</div>
+  <div class="mode-indicator">
+    MODE: <span id="mode-indicator-val">DEALER</span>
+  </div>
 
-        <div class="metrics">
-          <div class="metric">
-            <div class="metric-k">Hands</div>
-            <div id="m-hands" class="metric-v">0</div>
-          </div>
-          <div class="metric">
-            <div class="metric-k">Correct</div>
-            <div id="m-correct" class="metric-v">0</div>
-          </div>
-          <div class="metric">
-            <div class="metric-k">Accuracy</div>
-            <div id="m-acc" class="metric-v">0.0%</div>
-          </div>
-          <div class="metric">
-            <div class="metric-k">Streak</div>
-            <div id="m-streak" class="metric-v">0</div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="mini">
-          <div class="mini-k">Last hand result</div>
-          <div id="m-last" class="mini-v">—</div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="chart-wrap">
-          <canvas id="accChart"></canvas>
-        </div>
-
-        <div class="divider"></div>
-
-        <button id="open-overlay" class="btn">Open Review Overlay [O]</button>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">CONTROLS</div>
-        <div class="controls">
-          <button id="mode-dealer" class="btn btn-ghost">Dealer Mode [G]</button>
-          <button id="mode-player" class="btn btn-ghost">Player Mode [L]</button>
-          <button id="toggle-auto" class="btn btn-ghost">Auto-Next [M]</button>
-          <button id="undo" class="btn btn-ghost">Undo [U]</button>
-          <button id="next" class="btn btn-ghost">Next [Space]</button>
-          <button id="reset" class="btn btn-danger">Reset Shoe [X]</button>
-        </div>
-      </div>
-    </aside>
-  </main>
-
-  <!-- Review Overlay -->
-  <div id="overlay" class="overlay" role="dialog" aria-modal="false" aria-label="Review overlay">
-    <div class="overlay-inner">
-      <div class="overlay-head">
-        <div class="overlay-title">REVIEW OVERLAY</div>
-        <div class="overlay-actions">
-          <label class="chip">
-            <input id="filter-mistakes" type="checkbox" />
-            Mistakes only
-          </label>
-          <button id="close-overlay" class="btn btn-ghost">Close [Esc]</button>
-        </div>
-      </div>
-
-      <div class="overlay-body">
-        <div class="ov-grid">
-          <div class="ov-card">
-            <div class="ov-title">Current Snapshot</div>
-            <div id="ov-snapshot" class="ov-block"></div>
-          </div>
-
-          <div class="ov-card">
-            <div class="ov-title">Last Decision</div>
-            <div id="ov-last" class="ov-block"></div>
-          </div>
-        </div>
-
-        <div class="ov-table-wrap">
-          <table class="ov-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Up</th>
-                <th>Hand</th>
-                <th>TC</th>
-                <th>Rec</th>
-                <th>You</th>
-                <th>OK</th>
-                <th>Deviation</th>
-              </tr>
-            </thead>
-            <tbody id="ov-log"></tbody>
-          </table>
-        </div>
-      </div>
+  <div class="action-mid">
+    <div class="action-label">RECOMMENDED</div>
+    <div id="rec-action" class="action-val">---</div>
+    <div id="rec-reason" class="action-reason">
+      Enter dealer up-card (G), then table cards (T) or player cards (L).
     </div>
   </div>
 
-  <script type="module" src="./app.js"></script>
+  <div class="action-bottom">
+    <div class="state-line">
+      <div class="state-k">Dealer</div>
+      <div id="disp-dealer" class="state-v">?</div>
+    </div>
+    <div class="state-line">
+      <div class="state-k">Hand</div>
+      <div id="disp-player" class="state-v">--</div>
+    </div>
+    <div class="state-line">
+      <div class="state-k">Table</div>
+      <div id="disp-table" class="state-v">--</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="key-hint">
+Cards: 2–9, T (or 0/J/Q/K), A · Modes: G dealer, L player, T table · Log: H/S/D/P/R/I · U undo · Space next · O overlay · X reset · M auto
+</div>
+
+</section>
+
+<aside class="side">
+
+<div class="panel">
+<div class="panel-title">SESSION ANALYTICS</div>
+
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-k">Hands</div>
+    <div id="m-hands" class="metric-v">0</div>
+  </div>
+  <div class="metric">
+    <div class="metric-k">Correct</div>
+    <div id="m-correct" class="metric-v">0</div>
+  </div>
+  <div class="metric">
+    <div class="metric-k">Accuracy</div>
+    <div id="m-acc" class="metric-v">0.0%</div>
+  </div>
+  <div class="metric">
+    <div class="metric-k">Streak</div>
+    <div id="m-streak" class="metric-v">0</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="chart-wrap">
+<canvas id="accChart"></canvas>
+</div>
+
+<div class="divider"></div>
+
+<button id="open-overlay" class="btn">Review Overlay [O]</button>
+
+</div>
+
+</aside>
+
+</main>
+
+<div id="overlay" class="overlay">
+  <div class="overlay-inner">
+    <div class="overlay-head">
+      <div class="overlay-title">REVIEW</div>
+      <button id="close-overlay" class="btn btn-ghost">Close [Esc]</button>
+    </div>
+    <div class="overlay-body">
+      <div id="ov-snapshot" class="ov-block"></div>
+      <table class="ov-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Up</th>
+            <th>Hand</th>
+            <th>Table</th>
+            <th>TC</th>
+            <th>Rec</th>
+            <th>You</th>
+            <th>OK</th>
+          </tr>
+        </thead>
+        <tbody id="ov-log"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./app.js"></script>
 </body>
 </html>
