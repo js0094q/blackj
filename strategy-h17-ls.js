@@ -1,3 +1,6 @@
+// 6D, H17, LS assumed in matrix + a few explicit Hi-Lo deviations.
+// This module only recommends the player's action.
+
 const S = 'STAND', H = 'HIT', D = 'DOUBLE', P = 'SPLIT', R = 'SURRENDER', I = 'INSURE';
 
 const MATRIX = {
@@ -10,8 +13,8 @@ const MATRIX = {
     12: { '4': S, '5': S, '6': S, default: H },
     11: { default: D },
     10: { 'T': H, 'A': H, default: D },
-    9: { '3': D, '4': D, '5': D, '6': D, default: H },
-    8: { default: H }
+    9:  { '3': D, '4': D, '5': D, '6': D, default: H },
+    8:  { default: H }
   },
   soft: {
     20: { default: S },
@@ -38,13 +41,17 @@ const MATRIX = {
 };
 
 function analyze(cards) {
-  let total = 0, aces = 0;
+  let total = 0;
+  let aces = 0;
+
   for (const c of cards) {
     if (c === 'A') { total += 11; aces++; }
     else if (c === 'T') total += 10;
     else total += Number(c);
   }
+
   while (total > 21 && aces > 0) { total -= 10; aces--; }
+
   return {
     total,
     isSoft: aces > 0,
@@ -53,36 +60,59 @@ function analyze(cards) {
   };
 }
 
-function baseStrategyAction(hand, up) {
+function baseMove(hand, up) {
   const a = analyze(hand);
+
   let action = H;
+  let family = 'hard';
 
   if (a.isPair && hand.length === 2) {
+    family = 'pair';
     action = MATRIX.pair[a.pairRank]?.[up] || MATRIX.pair[a.pairRank]?.default || H;
   } else if (a.isSoft) {
+    family = 'soft';
     action = MATRIX.soft[a.total]?.[up] || MATRIX.soft[a.total]?.default || H;
   } else {
+    family = 'hard';
     if (a.total >= 17) action = S;
     else if (a.total <= 8) action = H;
     else action = MATRIX.hard[a.total]?.[up] || MATRIX.hard[a.total]?.default || H;
   }
 
   if (hand.length > 2 && (action === D || action === P)) action = H;
-  return { action, total: a.total, isSoft: a.isSoft, isPair: a.isPair };
+
+  return { action, total: a.total, family, isSoft: a.isSoft, isPair: a.isPair };
 }
 
 function deviation(up, tc, base) {
-  if (up === 'A' && tc >= 3.0) return { action: I, rule: 'Insurance TC ≥ +3.0' };
-  if (base.total === 16 && up === 'T' && tc >= 0.0) return { action: S, rule: '16 vs T TC ≥ 0.0' };
-  if (base.total === 15 && up === 'T' && tc >= 4.0) return { action: S, rule: '15 vs T TC ≥ +4.0' };
+  // Minimal set, expand later.
+  if (up === 'A' && tc >= 3.0) return { action: I, name: 'Insurance', rule: 'TC ≥ +3.0' };
+  if (base.total === 16 && up === 'T' && tc >= 0.0) return { action: S, name: '16 vs T', rule: 'TC ≥ 0.0' };
+  if (base.total === 15 && up === 'T' && tc >= 4.0) return { action: S, name: '15 vs T', rule: 'TC ≥ +4.0' };
   return null;
 }
 
 export function recommendMove(hand, up, tc) {
   if (!up || hand.length < 2) return null;
-  const base = baseStrategyAction(hand, up);
+
+  const base = baseMove(hand, up);
   const dev = deviation(up, tc, base);
-  return dev
-    ? { action: dev.action, baseAction: base.action, deviation: dev.rule }
-    : { action: base.action, baseAction: base.action, deviation: null };
+
+  if (dev) {
+    return {
+      action: dev.action,
+      baseAction: base.action,
+      deviation: `${dev.name} (${dev.rule})`,
+      reason: `Deviation applied: ${dev.name}, ${dev.rule}`,
+      details: { total: base.total, family: base.family }
+    };
+  }
+
+  return {
+    action: base.action,
+    baseAction: base.action,
+    deviation: null,
+    reason: 'Basic Strategy',
+    details: { total: base.total, family: base.family }
+  };
 }
