@@ -2,15 +2,17 @@
   --bg1:#070b16;
   --bg2:#0e1b3a;
   --panel:rgba(255,255,255,0.08);
-  --panel2:rgba(255,255,255,0.06);
   --border:rgba(255,255,255,0.15);
-  --border2:rgba(255,255,255,0.10);
   --text:rgba(255,255,255,0.96);
   --muted:rgba(255,255,255,0.60);
-  --blue:#3b82f6;
-  --green:#22c55e;
-  --yellow:#fbbf24;
-  --red:#ef4444;
+
+  --band-neg:#ef4444;
+  --band-neutral:#94a3b8;
+  --band-pos:#3b82f6;
+  --band-high:#22c55e;
+
+  --dev-accent:#fbbf24;
+
   font-family:system-ui,-apple-system,Segoe UI,Roboto;
 }
 
@@ -39,31 +41,46 @@ body{
   font-size:20px;
   letter-spacing:.08em;
 }
-.brand-sub{font-size:12px;color:var(--muted)}
+.brand-sub{
+  font-size:12px;
+  color:var(--muted);
+}
 
 .hud{display:flex;gap:16px}
+
 .hud-box{
   padding:12px 18px;
   border-radius:16px;
-  background:var(--panel2);
-  border:1px solid var(--border2);
+  background:var(--panel);
+  border:1px solid var(--border);
   backdrop-filter:blur(10px);
 }
+
 .hud-focus{
-  border-color:var(--blue);
+  border-color:#3b82f6;
   box-shadow:0 0 0 2px rgba(59,130,246,.35);
 }
+
 .hud-label{font-size:11px;color:var(--muted)}
 .hud-val{font-size:26px;font-weight:900}
 
+.hud-band{
+  font-size:11px;
+  margin-top:4px;
+  letter-spacing:.12em;
+}
+
+.band-neg{ color:var(--band-neg); }
+.band-neutral{ color:var(--band-neutral); }
+.band-pos{ color:var(--band-pos); }
+.band-high{ color:var(--band-high); }
+
 .main{
   display:grid;
-  grid-template-columns:1.6fr .85fr;
-  gap:48px;
+  grid-template-columns:1fr;
   width:94%;
-  max-width:1200px;
+  max-width:1000px;
   margin:70px auto 120px;
-  align-items:start;
 }
 
 .action-card{
@@ -73,6 +90,7 @@ body{
   padding:46px 52px;
   backdrop-filter:blur(14px);
   box-shadow:0 60px 120px rgba(0,0,0,.6);
+  transition:box-shadow .2s ease, border-color .2s ease;
 }
 
 .status-row{display:flex;gap:16px;margin-bottom:6px}
@@ -85,7 +103,6 @@ body{
   margin:14px 0 22px;
   text-transform:uppercase;
 }
-.mode-indicator span{color:var(--text);font-weight:900}
 
 .action-label{
   font-size:13px;
@@ -98,10 +115,25 @@ body{
   font-weight:900;
   margin:22px 0 14px;
   line-height:1;
-  letter-spacing:-0.02em;
+  transition:color .2s ease, text-shadow .2s ease;
 }
 
-.action-reason{font-size:14px;color:var(--muted);max-width:720px}
+.action-reason{
+  font-size:14px;
+  color:var(--muted);
+  transition:color .2s ease;
+}
+
+/* Deviation highlight */
+
+.deviation-active .action-val{
+  color:var(--dev-accent);
+  text-shadow:0 0 18px rgba(251,191,36,.35);
+}
+
+.deviation-active .action-reason{
+  color:#ffd977;
+}
 
 .divider{
   height:1px;
@@ -114,178 +146,6 @@ body{
   grid-template-columns:repeat(3,1fr);
   gap:24px;
 }
+
 .state-k{font-size:12px;color:var(--muted)}
-.state-v{font-size:18px;font-weight:900;margin-top:6px}
-
-.controls-card{
-  margin-top:18px;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:22px;
-  padding:22px 24px;
-  backdrop-filter:blur(10px);
-}
-
-.controls-title{
-  font-size:12px;
-  letter-spacing:.18em;
-  color:rgba(255,255,255,0.70);
-  margin-bottom:14px;
-}
-
-.controls-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:18px;
-}
-
-.controls-sub{
-  font-size:11px;
-  letter-spacing:.14em;
-  color:rgba(255,255,255,0.65);
-  text-transform:uppercase;
-  margin:12px 0 8px;
-}
-
-.controls-list{
-  margin:0;
-  padding-left:18px;
-  color:rgba(255,255,255,0.78);
-  font-size:13px;
-  line-height:1.55;
-}
-
-kbd{
-  display:inline-block;
-  min-width:22px;
-  text-align:center;
-  padding:2px 7px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,0.16);
-  background:rgba(255,255,255,0.06);
-  font-weight:900;
-  font-size:12px;
-  letter-spacing:.06em;
-}
-
-.panel{
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:24px;
-  padding:30px;
-  backdrop-filter:blur(10px);
-}
-
-.panel-title{
-  font-size:12px;
-  letter-spacing:.2em;
-  color:var(--muted);
-  margin-bottom:24px;
-}
-
-.metric{margin-bottom:18px}
-.metric-k{font-size:11px;color:var(--muted)}
-.metric-v{font-size:18px;font-weight:900}
-
-.btn{
-  padding:12px 18px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,0.14);
-  background:rgba(255,255,255,0.07);
-  color:var(--text);
-  cursor:pointer;
-}
-.btn:hover{border-color:rgba(255,255,255,0.28)}
-.btn.ghost{background:transparent}
-
-.overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.75);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-  z-index:50;
-}
-.overlay.show{display:flex}
-
-.overlay-inner{
-  width:min(1100px, 96vw);
-  background:#0d152a;
-  border:1px solid rgba(255,255,255,0.10);
-  border-radius:24px;
-  overflow:hidden;
-  box-shadow:0 40px 120px rgba(0,0,0,.7);
-}
-
-.overlay-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:18px 20px;
-  border-bottom:1px solid rgba(255,255,255,0.08);
-}
-
-.overlay-title{
-  font-size:12px;
-  letter-spacing:.2em;
-  color:rgba(255,255,255,0.75);
-}
-
-.overlay-body{padding:18px 20px 22px}
-
-.ov-snapshot{
-  display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  gap:12px;
-  margin-bottom:16px;
-  color:rgba(255,255,255,0.85);
-  font-size:13px;
-}
-
-.ov-pill{
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:16px;
-  padding:10px 12px;
-}
-
-.ov-pill .k{color:rgba(255,255,255,0.55); font-size:11px; letter-spacing:.12em}
-.ov-pill .v{margin-top:6px; font-weight:900}
-
-.ov-table-wrap{
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:18px;
-  overflow:auto;
-}
-
-.ov-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px;
-}
-.ov-table th{
-  position:sticky;
-  top:0;
-  background:#0d152a;
-  color:rgba(255,255,255,0.62);
-  text-align:left;
-  padding:10px;
-  border-bottom:1px solid rgba(255,255,255,0.08);
-  white-space:nowrap;
-}
-.ov-table td{
-  padding:10px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  white-space:nowrap;
-}
-
-.ok{color:var(--green); font-weight:900}
-.bad{color:var(--red); font-weight:900}
-
-@media (max-width: 980px){
-  .main{grid-template-columns:1fr; gap:28px}
-  .controls-grid{grid-template-columns:1fr}
-  .ov-snapshot{grid-template-columns:1fr}
-}
+.state-v{font-size:18px;font-weight:900;margin-top:4px}
