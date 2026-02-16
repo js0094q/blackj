@@ -19,10 +19,13 @@
       <div class="hud-label">RC</div>
       <div id="rc-val" class="hud-val">0</div>
     </div>
+
     <div class="hud-box hud-focus">
       <div class="hud-label">TC</div>
       <div id="tc-val" class="hud-val">0.0</div>
+      <div id="tc-band" class="hud-band">NEUTRAL</div>
     </div>
+
     <div class="hud-box">
       <div class="hud-label">DECKS</div>
       <div id="decks-left" class="hud-val">6.0</div>
@@ -34,7 +37,7 @@
 
 <section class="primary">
 
-  <div class="action-card">
+  <div class="action-card" id="action-card">
 
     <div class="status-row">
       <div id="state-tag" class="status">READY</div>
@@ -46,6 +49,7 @@
     </div>
 
     <div class="action-label">RECOMMENDED</div>
+
     <div id="rec-action" class="action-val">---</div>
     <div id="rec-reason" class="action-reason">
       Enter dealer (G), then table (T) or player (L) cards.
@@ -70,117 +74,9 @@
 
   </div>
 
-  <div class="controls-card">
-    <div class="controls-title">CONTROLS</div>
-
-    <div class="controls-grid">
-      <div class="controls-col">
-        <div class="controls-sub">Modes</div>
-        <ul class="controls-list">
-          <li><kbd>G</kbd> Dealer mode (sets up-card)</li>
-          <li><kbd>L</kbd> Player mode (your hand)</li>
-          <li><kbd>T</kbd> Table mode (other players, affects count only)</li>
-        </ul>
-
-        <div class="controls-sub">Cards</div>
-        <ul class="controls-list">
-          <li><kbd>2</kbd>–<kbd>9</kbd> ranks</li>
-          <li><kbd>A</kbd> Ace</li>
-          <li><kbd>0</kbd>/<kbd>J</kbd>/<kbd>Q</kbd>/<kbd>K</kbd> Ten-value (no <kbd>T</kbd> key, reserved for Table mode)</li>
-        </ul>
-      </div>
-
-      <div class="controls-col">
-        <div class="controls-sub">Log your action</div>
-        <ul class="controls-list">
-          <li><kbd>H</kbd> Hit</li>
-          <li><kbd>S</kbd> Stand</li>
-          <li><kbd>D</kbd> Double</li>
-          <li><kbd>P</kbd> Split</li>
-          <li><kbd>R</kbd> Surrender</li>
-          <li><kbd>I</kbd> Insurance</li>
-        </ul>
-
-        <div class="controls-sub">Navigation</div>
-        <ul class="controls-list">
-          <li><kbd>Space</kbd> Next hand (clears dealer, hand, table, keeps count)</li>
-          <li><kbd>O</kbd> Toggle review overlay</li>
-          <li><kbd>Esc</kbd> Close overlay</li>
-          <li><kbd>X</kbd> Reset shoe (clears count + session)</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
 </section>
 
-<aside class="side">
-
-  <div class="panel">
-    <div class="panel-title">SESSION ANALYTICS</div>
-
-    <div class="metric">
-      <div class="metric-k">Hands</div>
-      <div id="m-hands" class="metric-v">0</div>
-    </div>
-
-    <div class="metric">
-      <div class="metric-k">Correct</div>
-      <div id="m-correct" class="metric-v">0</div>
-    </div>
-
-    <div class="metric">
-      <div class="metric-k">Accuracy</div>
-      <div id="m-acc" class="metric-v">0.0%</div>
-    </div>
-
-    <div class="metric">
-      <div class="metric-k">Streak</div>
-      <div id="m-streak" class="metric-v">0</div>
-    </div>
-
-    <div class="divider"></div>
-
-    <button id="open-overlay" class="btn">Review Overlay [O]</button>
-  </div>
-
-</aside>
-
 </main>
-
-<!-- Overlay -->
-<div id="overlay" class="overlay" aria-hidden="true">
-  <div class="overlay-inner">
-    <div class="overlay-head">
-      <div class="overlay-title">SESSION REVIEW</div>
-      <button id="close-overlay" class="btn ghost">Close [Esc]</button>
-    </div>
-
-    <div class="overlay-body">
-      <div id="ov-snapshot" class="ov-snapshot"></div>
-
-      <div class="ov-table-wrap">
-        <table class="ov-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Up</th>
-              <th>Hand</th>
-              <th>Table</th>
-              <th>TC</th>
-              <th>Rec</th>
-              <th>You</th>
-              <th>OK</th>
-              <th>Dev</th>
-            </tr>
-          </thead>
-          <tbody id="ov-log"></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-</div>
 
 <script type="module" src="./app.js"></script>
 </body>
