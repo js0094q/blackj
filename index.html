@@ -11,7 +11,7 @@
 <header class="topbar">
   <div class="brand">
     <div class="brand-title">BLACKJ</div>
-    <div class="brand-sub">PRO ANALYTICS · 6D · H17 · LS</div>
+    <div class="brand-sub">MYBOOKIE.AG ONLY · 6D · H17 · LS · SPLIT A: 1 CARD</div>
   </div>
 
   <div class="hud">
@@ -47,12 +47,22 @@
     <div class="mode-indicator">
       MODE: <span id="mode-indicator-val">DEALER</span>
     </div>
+    <div class="mode-indicator">
+      FLOW: <span id="flow-indicator-val">MANUAL</span>
+    </div>
 
     <div class="action-label">RECOMMENDED</div>
 
     <div id="rec-action" class="action-val">---</div>
     <div id="rec-reason" class="action-reason">
       Enter dealer (G), then table (T) or player (L) cards.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="recent-row">
+      <div class="state-k">Recent Inputs</div>
+      <div id="input-log" class="state-v">--</div>
     </div>
 
     <div class="divider"></div>
@@ -69,6 +79,23 @@
       <div>
         <div class="state-k">Table</div>
         <div id="disp-table" class="state-v">--</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="bet-grid">
+      <div>
+        <div class="state-k">Est. Edge</div>
+        <div id="edge-val" class="state-v">-0.60%</div>
+      </div>
+      <div>
+        <div class="state-k">Bet Units</div>
+        <div id="bet-units" class="state-v">0</div>
+      </div>
+      <div>
+        <div class="state-k">Wong</div>
+        <div id="wong-val" class="state-v">WAIT</div>
       </div>
     </div>
 
