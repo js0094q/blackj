@@ -11,7 +11,11 @@ export function normalizeRank(raw) {
   return RANK_MAP[s] || s;
 }
 
+export function getExactTrueCount(rc, decksRemaining) {
+  return rc / Math.max(0.25, decksRemaining);
+}
+
 // True count rounded to nearest 0.5
 export function getTrueCount(rc, decksRemaining) {
-  return Math.round((rc / Math.max(0.25, decksRemaining)) * 2) / 2;
+  return Math.round(getExactTrueCount(rc, decksRemaining) * 2) / 2;
 }
