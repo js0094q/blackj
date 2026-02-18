@@ -84,11 +84,80 @@ function baseMove(hand, up) {
   return { action, total: a.total, family, isSoft: a.isSoft, isPair: a.isPair };
 }
 
-function deviation(up, tc, base) {
-  // Minimal set, expand later.
-  if (up === 'A' && tc >= 3.0) return { action: I, name: 'Insurance', rule: 'TC ≥ +3.0' };
-  if (base.total === 16 && up === 'T' && tc >= 0.0) return { action: S, name: '16 vs T', rule: 'TC ≥ 0.0' };
-  if (base.total === 15 && up === 'T' && tc >= 4.0) return { action: S, name: '15 vs T', rule: 'TC ≥ +4.0' };
+function deviation(hand, up, tc, base) {
+  const twoCard = hand.length === 2;
+  const hardTotal = !base.isSoft;
+  const isPairHand = base.isPair;
+
+  // Illustrious 18
+  if (up === 'A' && tc >= 3.0) return { action: I, name: 'Insurance', rule: 'TC >= +3.0' };
+
+  if (twoCard && hardTotal && !isPairHand && base.total === 16 && up === 'T' && tc >= 0.0) {
+    return { action: S, name: '16 vs T', rule: 'TC >= +0.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 15 && up === 'T' && tc >= 4.0) {
+    return { action: S, name: '15 vs T', rule: 'TC >= +4.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 10 && up === 'T' && tc >= 4.0) {
+    return { action: D, name: '10 vs T', rule: 'TC >= +4.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 12 && up === '3' && tc >= 2.0) {
+    return { action: S, name: '12 vs 3', rule: 'TC >= +2.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 12 && up === '2' && tc >= 3.0) {
+    return { action: S, name: '12 vs 2', rule: 'TC >= +3.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 11 && up === 'A' && tc >= 1.0) {
+    return { action: D, name: '11 vs A', rule: 'TC >= +1.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 9 && up === '2' && tc >= 1.0) {
+    return { action: D, name: '9 vs 2', rule: 'TC >= +1.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 10 && up === 'A' && tc >= 4.0) {
+    return { action: D, name: '10 vs A', rule: 'TC >= +4.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 9 && up === '7' && tc >= 3.0) {
+    return { action: D, name: '9 vs 7', rule: 'TC >= +3.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 16 && up === '9' && tc >= 5.0) {
+    return { action: S, name: '16 vs 9', rule: 'TC >= +5.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 13 && up === '2' && tc <= -1.0) {
+    return { action: H, name: '13 vs 2', rule: 'TC <= -1.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 12 && up === '4' && tc < 0.0) {
+    return { action: H, name: '12 vs 4', rule: 'TC < +0.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 12 && up === '5' && tc <= -2.0) {
+    return { action: H, name: '12 vs 5', rule: 'TC <= -2.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 12 && up === '6' && tc <= -1.0) {
+    return { action: H, name: '12 vs 6', rule: 'TC <= -1.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 13 && up === '3' && tc <= -2.0) {
+    return { action: H, name: '13 vs 3', rule: 'TC <= -2.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 15 && up === '9' && tc >= 2.0) {
+    return { action: S, name: '15 vs 9', rule: 'TC >= +2.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 15 && up === 'A' && tc >= 5.0) {
+    return { action: S, name: '15 vs A', rule: 'TC >= +5.0' };
+  }
+
+  // Fab 4 (Late Surrender indices)
+  if (twoCard && hardTotal && !isPairHand && base.total === 14 && up === 'T' && tc >= 3.0) {
+    return { action: R, name: '14 vs T Surrender', rule: 'TC >= +3.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 15 && up === '9' && tc >= 2.0) {
+    return { action: R, name: '15 vs 9 Surrender', rule: 'TC >= +2.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 15 && up === 'T' && tc >= 0.0) {
+    return { action: R, name: '15 vs T Surrender', rule: 'TC >= +0.0' };
+  }
+  if (twoCard && hardTotal && !isPairHand && base.total === 15 && up === 'A' && tc >= 1.0) {
+    return { action: R, name: '15 vs A Surrender', rule: 'TC >= +1.0' };
+  }
+
   return null;
 }
 
@@ -96,7 +165,7 @@ export function recommendMove(hand, up, tc) {
   if (!up || hand.length < 2) return null;
 
   const base = baseMove(hand, up);
-  const dev = deviation(up, tc, base);
+  const dev = deviation(hand, up, tc, base);
 
   if (dev) {
     return {
