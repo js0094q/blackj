@@ -141,7 +141,20 @@ body{
   margin:26px 0;
 }
 
+.recent-row{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-end;
+}
+
 .state-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+}
+
+.bet-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:24px;
