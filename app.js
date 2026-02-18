@@ -14,8 +14,8 @@ const STORAGE_KEY = 'blackj-mybookie-config-v1';
 const HISTORY_LIMIT = 400;
 
 const DEFAULT_SETTINGS = Object.freeze({
-  startingBankroll: 10000,
-  unitPct: 1,
+  startingBankroll: 100,
+  unitPct: 10,
   spreadCap: 12,
   ramp: [
     { minTc: 5, units: 8 },
@@ -569,7 +569,15 @@ function render() {
   }
 }
 
+function isEditingField(e) {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
 function handleKey(e) {
+  if (isEditingField(e)) return;
   if (e.repeat) return;
   const k = e.key.toLowerCase();
 
