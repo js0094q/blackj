@@ -11,12 +11,18 @@ const MYBOOKIE_RULES = Object.freeze({
 });
 
 const STORAGE_KEY = 'blackj-mybookie-config-v1';
+const BANKROLL_MIGRATION_KEY = 'blackj-bankroll-default-100-migrated-v1';
 const HISTORY_LIMIT = 400;
+const MIN_CARDS_FOR_BETTING = 52;
+const BETTING_DECK_RESOLUTION = 0.5;
+const CONFIDENCE_INPUT_TARGET_CARDS = 156;
+const CONFIDENCE_PENETRATION_TARGET = 0.5;
 
 const DEFAULT_SETTINGS = Object.freeze({
   startingBankroll: 100,
-  unitPct: 10,
+  unitPct: 1,
   spreadCap: 12,
+  otherPlayers: 3,
   ramp: [
     { minTc: 5, units: 8 },
     { minTc: 4, units: 6 },
@@ -33,9 +39,13 @@ const state = {
   dealerCards: [],
   hand: [],
   tableCards: [],
+  otherPlayerHands: [],
+  nextOtherSeat: 0,
   mode: 'dealer',
   autoFlow: false,
   autoStage: 'player',
+  smartInput: true,
+  nextCardMode: null,
   history: [],
   inputLog: [],
   settings: loadSettings(),
@@ -55,6 +65,7 @@ const state = {
 };
 
 state.bankroll = state.settings.startingBankroll;
+syncOtherPlayerHands();
 
 const el = {
   rc: document.getElementById('rc-val'),
@@ -72,6 +83,8 @@ const el = {
   inputLog: document.getElementById('input-log'),
   edgeVal: document.getElementById('edge-val'),
   betUnits: document.getElementById('bet-units'),
+  betTcVal: document.getElementById('bet-tc-val'),
+  countConfVal: document.getElementById('count-conf-val'),
   wongVal: document.getElementById('wong-val'),
   bankrollVal: document.getElementById('bankroll-val'),
   unitVal: document.getElementById('unit-val'),
@@ -87,6 +100,7 @@ const el = {
   cfgBankroll: document.getElementById('cfg-bankroll'),
   cfgUnitPct: document.getElementById('cfg-unit-pct'),
   cfgSpreadCap: document.getElementById('cfg-spread-cap'),
+  cfgOtherPlayers: document.getElementById('cfg-other-players'),
   cfgApply: document.getElementById('cfg-apply'),
   statsReset: document.getElementById('stats-reset'),
   btnWin: document.getElementById('btn-win'),
@@ -109,7 +123,15 @@ function loadSettings() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return cloneSettings(DEFAULT_SETTINGS);
     const parsed = JSON.parse(raw);
-    return normalizeSettings(parsed);
+    const normalized = normalizeSettings(parsed);
+
+    if (!localStorage.getItem(BANKROLL_MIGRATION_KEY) && normalized.startingBankroll === 10000) {
+      normalized.startingBankroll = DEFAULT_SETTINGS.startingBankroll;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    }
+
+    localStorage.setItem(BANKROLL_MIGRATION_KEY, '1');
+    return normalized;
   } catch {
     return cloneSettings(DEFAULT_SETTINGS);
   }
@@ -124,6 +146,7 @@ function cloneSettings(settings) {
     startingBankroll: settings.startingBankroll,
     unitPct: settings.unitPct,
     spreadCap: settings.spreadCap,
+    otherPlayers: settings.otherPlayers,
     ramp: settings.ramp.map((row) => ({ minTc: row.minTc, units: row.units }))
   };
 }
@@ -133,17 +156,38 @@ function sanitizeNum(v, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function buildOtherPlayerHands(count) {
+  return Array.from({ length: count }, () => []);
+}
+
+function syncOtherPlayerHands(preserveExisting = true) {
+  const count = Math.max(0, Math.round(sanitizeNum(state.settings?.otherPlayers, DEFAULT_SETTINGS.otherPlayers)));
+  const existing = state.otherPlayerHands || [];
+  const hands = buildOtherPlayerHands(count);
+
+  if (preserveExisting) {
+    for (let i = 0; i < Math.min(existing.length, hands.length); i++) {
+      hands[i] = [...existing[i]];
+    }
+  }
+
+  state.otherPlayerHands = hands;
+  state.nextOtherSeat = count > 0 ? state.nextOtherSeat % count : 0;
+}
+
 function normalizeSettings(input) {
   const merged = {
     startingBankroll: sanitizeNum(input?.startingBankroll, DEFAULT_SETTINGS.startingBankroll),
     unitPct: sanitizeNum(input?.unitPct, DEFAULT_SETTINGS.unitPct),
     spreadCap: sanitizeNum(input?.spreadCap, DEFAULT_SETTINGS.spreadCap),
+    otherPlayers: sanitizeNum(input?.otherPlayers, DEFAULT_SETTINGS.otherPlayers),
     ramp: Array.isArray(input?.ramp) ? input.ramp : DEFAULT_SETTINGS.ramp
   };
 
   merged.startingBankroll = Math.max(100, merged.startingBankroll);
   merged.unitPct = Math.max(0.1, Math.min(10, merged.unitPct));
   merged.spreadCap = Math.max(1, Math.round(merged.spreadCap));
+  merged.otherPlayers = Math.max(0, Math.min(6, Math.round(merged.otherPlayers)));
 
   const cleanRamp = merged.ramp
     .slice(0, 5)
@@ -158,6 +202,9 @@ function normalizeSettings(input) {
   }
 
   cleanRamp.sort((a, b) => b.minTc - a.minTc);
+  for (let i = 1; i < cleanRamp.length; i++) {
+    cleanRamp[i].units = Math.min(cleanRamp[i - 1].units, cleanRamp[i].units);
+  }
   merged.ramp = cleanRamp;
   return merged;
 }
@@ -185,6 +232,7 @@ function bindUiEvents() {
     pushHistory();
     const updated = normalizeSettings(readSettingsForm());
     state.settings = updated;
+    syncOtherPlayerHands(true);
     state.bankroll = updated.startingBankroll;
     saveSettings();
     renderSettingsForm();
@@ -212,6 +260,7 @@ function readSettingsForm() {
     startingBankroll: sanitizeNum(el.cfgBankroll.value, DEFAULT_SETTINGS.startingBankroll),
     unitPct: sanitizeNum(el.cfgUnitPct.value, DEFAULT_SETTINGS.unitPct),
     spreadCap: sanitizeNum(el.cfgSpreadCap.value, DEFAULT_SETTINGS.spreadCap),
+    otherPlayers: sanitizeNum(el.cfgOtherPlayers.value, DEFAULT_SETTINGS.otherPlayers),
     ramp
   };
 }
@@ -220,6 +269,7 @@ function renderSettingsForm() {
   el.cfgBankroll.value = state.settings.startingBankroll;
   el.cfgUnitPct.value = state.settings.unitPct;
   el.cfgSpreadCap.value = state.settings.spreadCap;
+  el.cfgOtherPlayers.value = state.settings.otherPlayers;
   for (let i = 1; i <= 5; i++) {
     const row = state.settings.ramp[i - 1];
     el[`cfgTc${i}`].value = row.minTc;
@@ -234,9 +284,13 @@ function captureSnapshot() {
     dealerCards: [...state.dealerCards],
     hand: [...state.hand],
     tableCards: [...state.tableCards],
+    otherPlayerHands: state.otherPlayerHands.map((cards) => [...cards]),
+    nextOtherSeat: state.nextOtherSeat,
     mode: state.mode,
     autoFlow: state.autoFlow,
     autoStage: state.autoStage,
+    smartInput: state.smartInput,
+    nextCardMode: state.nextCardMode,
     inputLog: [...state.inputLog],
     settings: cloneSettings(state.settings),
     bankroll: state.bankroll,
@@ -266,11 +320,18 @@ function restoreSnapshot(snap) {
   state.dealerCards = [...snap.dealerCards];
   state.hand = [...snap.hand];
   state.tableCards = [...snap.tableCards];
+  state.settings = normalizeSettings(snap.settings || {});
+  state.otherPlayerHands = Array.isArray(snap.otherPlayerHands)
+    ? snap.otherPlayerHands.map((cards) => [...cards])
+    : buildOtherPlayerHands(state.settings.otherPlayers);
+  state.nextOtherSeat = Number.isInteger(snap.nextOtherSeat) ? snap.nextOtherSeat : 0;
   state.mode = snap.mode;
   state.autoFlow = snap.autoFlow;
   state.autoStage = snap.autoStage;
+  state.smartInput = typeof snap.smartInput === 'boolean' ? snap.smartInput : state.smartInput;
+  state.nextCardMode = snap.nextCardMode || null;
   state.inputLog = [...snap.inputLog];
-  state.settings = cloneSettings(snap.settings);
+  syncOtherPlayerHands(true);
   state.bankroll = snap.bankroll;
   state.performance = {
     wins: snap.performance.wins,
@@ -301,6 +362,40 @@ function exactTCNow() {
 
 function displayTCNow() {
   return getTrueCount(state.rc, decksRemaining());
+}
+
+function decksRemainingForBetting() {
+  const remaining = decksRemaining();
+  return Math.max(0.5, Math.ceil(remaining / BETTING_DECK_RESOLUTION) * BETTING_DECK_RESOLUTION);
+}
+
+function bettingTCNow() {
+  return Math.trunc(getExactTrueCount(state.rc, decksRemainingForBetting()));
+}
+
+function bettingCountReady() {
+  return state.cardsSeen >= MIN_CARDS_FOR_BETTING;
+}
+
+function penetrationNow() {
+  return Math.min(1, state.cardsSeen / (state.totalDecks * 52));
+}
+
+function countConfidenceNow() {
+  const inputFactor = Math.min(1, state.cardsSeen / CONFIDENCE_INPUT_TARGET_CARDS);
+  const penetrationFactor = Math.min(1, penetrationNow() / CONFIDENCE_PENETRATION_TARGET);
+  return Math.max(0, Math.min(1, (0.7 * inputFactor) + (0.3 * penetrationFactor)));
+}
+
+function countConfidenceLabel(confidence) {
+  if (confidence >= 0.8) return 'HIGH';
+  if (confidence >= 0.55) return 'MED';
+  return 'LOW';
+}
+
+function scaleBetByConfidence(rawUnits, confidence) {
+  if (rawUnits <= 0) return 0;
+  return Math.min(rawUnits, Math.max(0, Math.round(rawUnits * confidence)));
 }
 
 function estimatePlayerEdgePct(tc) {
@@ -337,7 +432,7 @@ function normalizeKeyToRank(k) {
 function modePrefix(mode) {
   if (mode === 'player') return 'P';
   if (mode === 'dealer') return 'D';
-  return 'T';
+  return 'O';
 }
 
 function addInputLog(mode, rank) {
@@ -349,6 +444,75 @@ function modeFromAutoStage(stage) {
   if (stage === 'table') return 'table';
   if (stage === 'dealer') return 'dealer';
   return 'player';
+}
+
+function prettyMode(mode) {
+  if (mode === 'dealer') return 'DEALER';
+  if (mode === 'player') return 'PLAYER';
+  return 'OTHERS';
+}
+
+function nextOtherSeatLabel() {
+  if (state.settings.otherPlayers <= 0) return 'TABLE';
+  return `SEAT ${state.nextOtherSeat + 1}`;
+}
+
+function modeLabel(mode) {
+  if (mode !== 'table') return prettyMode(mode);
+  return nextOtherSeatLabel();
+}
+
+function addOtherPlayersCard(rank) {
+  state.tableCards.push(rank);
+  if (state.settings.otherPlayers <= 0) return;
+
+  const seat = state.nextOtherSeat % state.settings.otherPlayers;
+  state.otherPlayerHands[seat].push(rank);
+  state.nextOtherSeat = (seat + 1) % state.settings.otherPlayers;
+}
+
+function cycleOtherSeat(step) {
+  if (state.settings.otherPlayers <= 0) return;
+  state.nextOtherSeat = (state.nextOtherSeat + step + state.settings.otherPlayers) % state.settings.otherPlayers;
+  state.nextCardMode = 'table';
+}
+
+function formatOtherPlayersDisplay() {
+  if (state.settings.otherPlayers <= 0) return state.tableCards.join(' ') || '--';
+  if (!state.tableCards.length) return '--';
+
+  return state.otherPlayerHands
+    .map((cards, idx) => {
+      const marker = idx === state.nextOtherSeat ? '*' : '';
+      return `S${idx + 1}${marker}:${cards.join(' ') || '--'}`;
+    })
+    .join(' | ');
+}
+
+function smartModeForNextCard() {
+  if (state.nextCardMode) {
+    const mode = state.nextCardMode;
+    state.nextCardMode = null;
+    return mode;
+  }
+
+  // Typical first-round deal order for one player seat: player, dealer upcard, player.
+  if (state.hand.length === 0 && state.dealerCards.length === 0) return 'player';
+  if (state.hand.length === 1 && state.dealerCards.length === 0) return 'dealer';
+  if (state.hand.length === 1 && state.dealerCards.length === 1) return 'player';
+
+  // After opening cards are set, unseen cards are usually other players/table by default.
+  return 'table';
+}
+
+function smartModePreview() {
+  if (state.nextCardMode) return state.nextCardMode;
+
+  if (state.hand.length === 0 && state.dealerCards.length === 0) return 'player';
+  if (state.hand.length === 1 && state.dealerCards.length === 0) return 'dealer';
+  if (state.hand.length === 1 && state.dealerCards.length === 1) return 'player';
+
+  return 'table';
 }
 
 function syncAutoMode() {
@@ -382,14 +546,14 @@ function advanceAutoFlowAfterCard() {
 
 function applyCard(rank) {
   const r = normalizeRank(rank);
-  const targetMode = state.mode;
+  const targetMode = state.smartInput ? smartModeForNextCard() : state.mode;
 
   state.rc += (HILO_VALUES[r] || 0);
   state.cardsSeen++;
 
   if (targetMode === 'dealer') state.dealerCards.push(r);
   else if (targetMode === 'player') state.hand.push(r);
-  else state.tableCards.push(r);
+  else addOtherPlayersCard(r);
 
   addInputLog(targetMode, r);
   advanceAutoFlowAfterCard();
@@ -435,7 +599,10 @@ function resetHand() {
   state.dealerCards = [];
   state.hand = [];
   state.tableCards = [];
+  state.otherPlayerHands = buildOtherPlayerHands(state.settings.otherPlayers);
+  state.nextOtherSeat = 0;
   state.inputLog = [];
+  state.nextCardMode = null;
   state.lastRecommendedAction = null;
   state.lastBetUnits = 0;
   if (state.autoFlow) {
@@ -458,6 +625,11 @@ function toggleAutoFlow() {
   else if (state.hand.length < 2) state.autoStage = 'player';
   else state.autoStage = 'table';
   syncAutoMode();
+}
+
+function toggleSmartInput() {
+  state.smartInput = !state.smartInput;
+  state.nextCardMode = null;
 }
 
 function actionWinrate(action) {
@@ -504,9 +676,14 @@ function recordOutcome(resultCode) {
 function render() {
   const exactTc = exactTCNow();
   const displayTc = displayTCNow();
+  const betTc = bettingTCNow();
+  const canTrustBetCount = bettingCountReady();
+  const countConfidence = countConfidenceNow();
   const band = getTCBand(exactTc);
-  const edgePct = estimatePlayerEdgePct(exactTc);
-  const betUnits = recommendedBetUnits(exactTc);
+  const edgePct = estimatePlayerEdgePct(canTrustBetCount ? betTc : 0);
+  const rawBetUnits = canTrustBetCount ? recommendedBetUnits(betTc) : 0;
+  const betUnits = canTrustBetCount ? scaleBetByConfidence(rawBetUnits, countConfidence) : 0;
+  const countConfidencePct = Math.round(countConfidence * 100);
   const unit = unitSize();
   const currentHandBet = betUnits * unit;
 
@@ -519,16 +696,28 @@ function render() {
   el.dispDealer.textContent = state.dealerCards.join(' ') || '?';
   el.dispDealerTotal.textContent = state.dealerCards.length ? `${handTotal(state.dealerCards)}` : '--';
   el.dispPlayer.textContent = state.hand.join(' ') || '--';
-  el.dispTable.textContent = state.tableCards.join(' ') || '--';
-  el.modeIndicator.textContent = state.mode.toUpperCase();
-  el.flowIndicator.textContent = state.autoFlow
-    ? `AUTO (${state.autoStage.toUpperCase()})`
-    : 'MANUAL';
+  el.dispTable.textContent = formatOtherPlayersDisplay();
+  if (state.smartInput) {
+    el.modeIndicator.textContent = `SMART->${modeLabel(smartModePreview())}`;
+  } else {
+    el.modeIndicator.textContent = modeLabel(state.mode);
+  }
+  if (state.smartInput) {
+    el.flowIndicator.textContent = state.nextCardMode
+      ? `SMART (NEXT ${modeLabel(state.nextCardMode)})`
+      : 'SMART';
+  } else {
+    el.flowIndicator.textContent = state.autoFlow
+      ? `AUTO (${state.autoStage.toUpperCase()})`
+      : 'MANUAL';
+  }
   el.inputLog.textContent = state.inputLog.join('  ') || '--';
 
   el.edgeVal.textContent = `${edgePct >= 0 ? '+' : ''}${edgePct.toFixed(2)}%`;
+  el.betTcVal.textContent = canTrustBetCount ? `${betTc}` : 'WARMUP';
+  el.countConfVal.textContent = `${countConfidencePct}% ${countConfidenceLabel(countConfidence)}`;
   el.betUnits.textContent = `${betUnits}`;
-  el.wongVal.textContent = exactTc >= MYBOOKIE_RULES.wongInTc ? 'PLAY' : 'WAIT';
+  el.wongVal.textContent = canTrustBetCount && betTc >= MYBOOKIE_RULES.wongInTc && betUnits > 0 ? 'PLAY' : 'WAIT';
   el.bankrollVal.textContent = formatMoney(state.bankroll);
   el.unitVal.textContent = formatMoney(unit);
   el.handBetVal.textContent = formatMoney(currentHandBet);
@@ -539,6 +728,9 @@ function render() {
   el.statsLast.textContent = state.lastResult;
 
   el.stateTag.textContent = state.autoFlow ? 'MYBOOKIE AUTO' : 'MYBOOKIE READY';
+  if (state.smartInput) {
+    el.stateTag.textContent = 'MYBOOKIE SMART';
+  }
 
   const up = dealerUpCard();
   if (up && state.hand.length >= 2) {
@@ -564,20 +756,12 @@ function render() {
   } else {
     el.recAction.textContent = '---';
     el.recWinrate.textContent = '--';
-    el.recReason.textContent = 'MYBOOKIE ONLY · Keys: G/L/T mode, M auto-flow, ; dealer-next, W/-/P result, U undo.';
+    el.recReason.textContent = 'MYBOOKIE ONLY · Smart input: ; dealer, H player, \' others, [/] cycle seat, V smart toggle.';
     el.actionCard.classList.remove('deviation-active');
   }
 }
 
-function isEditingField(e) {
-  const target = e.target;
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-}
-
 function handleKey(e) {
-  if (isEditingField(e)) return;
   if (e.repeat) return;
   const k = e.key.toLowerCase();
 
@@ -599,6 +783,36 @@ function handleKey(e) {
 
   if (k === 'm') {
     toggleAutoFlow();
+    render();
+    return;
+  }
+  if (k === 'v') {
+    toggleSmartInput();
+    render();
+    return;
+  }
+  if (k === '[') {
+    cycleOtherSeat(-1);
+    render();
+    return;
+  }
+  if (k === ']') {
+    cycleOtherSeat(1);
+    render();
+    return;
+  }
+  if (k === ';' && state.smartInput) {
+    state.nextCardMode = 'dealer';
+    render();
+    return;
+  }
+  if (k === 'h' && state.smartInput) {
+    state.nextCardMode = 'player';
+    render();
+    return;
+  }
+  if (k === "'" && state.smartInput) {
+    state.nextCardMode = 'table';
     render();
     return;
   }
