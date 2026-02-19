@@ -168,6 +168,12 @@ body{
   gap:24px;
 }
 
+/* Hide bet ramp UI per request */
+.bet-grid,
+.config-wrap{
+  display:none !important;
+}
+
 .result-row{
   display:flex;
   gap:10px;
@@ -196,18 +202,6 @@ button.ghost{
 .config-wrap{
   display:grid;
   gap:14px;
-}
-
-.count-check{
-  display:grid;
-  gap:10px;
-}
-
-.count-check-row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
 }
 
 .config-grid{
