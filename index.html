@@ -58,7 +58,7 @@
         <div id="stats-last" class="state-v">--</div>
       </div>
     </div>
-    <div id="rec-reason" class="action-reason">MYBOOKIE ONLY · Enter player/table/dealer cards via keyboard.</div>
+    <div id="rec-reason" class="action-reason">MYBOOKIE ONLY · Enter player/others/dealer cards via keyboard.</div>
 
     <div class="divider"></div>
 
@@ -97,7 +97,7 @@
 
     <div class="state-grid">
       <div>
-        <div class="state-k">Table Cards</div>
+        <div class="state-k">Other Player Deals</div>
         <div id="disp-table" class="state-v">--</div>
       </div>
       <div>
@@ -116,6 +116,14 @@
       <div>
         <div class="state-k">Est. Edge</div>
         <div id="edge-val" class="state-v">-0.60%</div>
+      </div>
+      <div>
+        <div class="state-k">Bet TC</div>
+        <div id="bet-tc-val" class="state-v">0</div>
+      </div>
+      <div>
+        <div class="state-k">Count Confidence</div>
+        <div id="count-conf-val" class="state-v">0%</div>
       </div>
       <div>
         <div class="state-k">Bet Units</div>
@@ -146,7 +154,7 @@
     <div class="divider"></div>
 
     <div class="config-wrap">
-      <div class="action-label">BET RAMP CONFIG (MYBOOKIE)</div>
+      <div class="action-label">BET RAMP CONFIG (MYBOOKIE · INT TC · 1 DECK WARMUP)</div>
       <div class="config-grid">
         <label>Starting Bankroll
           <input id="cfg-bankroll" type="number" min="100" step="100">
@@ -156,6 +164,9 @@
         </label>
         <label>Spread Cap (units)
           <input id="cfg-spread-cap" type="number" min="1" max="50" step="1">
+        </label>
+        <label>Other Players (seats)
+          <input id="cfg-other-players" type="number" min="0" max="6" step="1">
         </label>
       </div>
 
