@@ -198,6 +198,18 @@ button.ghost{
   gap:14px;
 }
 
+.count-check{
+  display:grid;
+  gap:10px;
+}
+
+.count-check-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
 .config-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
