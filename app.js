@@ -59,6 +59,13 @@ const state = {
     profitDollars: 0,
     byAction: {}
   },
+  countSkill: {
+    checks: 0,
+    exact: 0,
+    withinOne: 0,
+    sumAbsError: 0,
+    lastError: null
+  },
   lastRecommendedAction: null,
   lastBetUnits: 0,
   lastResult: '--'
@@ -85,6 +92,7 @@ const el = {
   betUnits: document.getElementById('bet-units'),
   betTcVal: document.getElementById('bet-tc-val'),
   countConfVal: document.getElementById('count-conf-val'),
+  countSkillVal: document.getElementById('count-skill-val'),
   wongVal: document.getElementById('wong-val'),
   bankrollVal: document.getElementById('bankroll-val'),
   unitVal: document.getElementById('unit-val'),
@@ -105,7 +113,10 @@ const el = {
   statsReset: document.getElementById('stats-reset'),
   btnWin: document.getElementById('btn-win'),
   btnLoss: document.getElementById('btn-loss'),
-  btnPush: document.getElementById('btn-push')
+  btnPush: document.getElementById('btn-push'),
+  rcGuess: document.getElementById('rc-guess'),
+  rcCheck: document.getElementById('rc-check'),
+  rcSkillReset: document.getElementById('rc-skill-reset')
 };
 
 for (let i = 1; i <= 5; i++) {
@@ -245,6 +256,18 @@ function bindUiEvents() {
     state.bankroll = state.settings.startingBankroll;
     render();
   });
+
+  el.rcCheck.addEventListener('click', () => {
+    pushHistory();
+    checkCountSkill();
+    render();
+  });
+
+  el.rcSkillReset.addEventListener('click', () => {
+    pushHistory();
+    resetCountSkill();
+    render();
+  });
 }
 
 function readSettingsForm() {
@@ -303,6 +326,7 @@ function captureSnapshot() {
       profitDollars: state.performance.profitDollars,
       byAction: JSON.parse(JSON.stringify(state.performance.byAction))
     },
+    countSkill: { ...state.countSkill },
     lastRecommendedAction: state.lastRecommendedAction,
     lastBetUnits: state.lastBetUnits,
     lastResult: state.lastResult
@@ -341,6 +365,13 @@ function restoreSnapshot(snap) {
     profitUnits: snap.performance.profitUnits,
     profitDollars: snap.performance.profitDollars,
     byAction: JSON.parse(JSON.stringify(snap.performance.byAction))
+  };
+  state.countSkill = {
+    checks: sanitizeNum(snap.countSkill?.checks, 0),
+    exact: sanitizeNum(snap.countSkill?.exact, 0),
+    withinOne: sanitizeNum(snap.countSkill?.withinOne, 0),
+    sumAbsError: sanitizeNum(snap.countSkill?.sumAbsError, 0),
+    lastError: snap.countSkill?.lastError === null ? null : sanitizeNum(snap.countSkill?.lastError, null)
   };
   state.lastRecommendedAction = snap.lastRecommendedAction;
   state.lastBetUnits = snap.lastBetUnits;
@@ -384,7 +415,37 @@ function penetrationNow() {
 function countConfidenceNow() {
   const inputFactor = Math.min(1, state.cardsSeen / CONFIDENCE_INPUT_TARGET_CARDS);
   const penetrationFactor = Math.min(1, penetrationNow() / CONFIDENCE_PENETRATION_TARGET);
-  return Math.max(0, Math.min(1, (0.7 * inputFactor) + (0.3 * penetrationFactor)));
+  return Math.max(0, Math.min(1, (0.7 * inputFactor) + (0.3 * penetrationFactor))) * countSkillFactor();
+}
+
+function countSkillFactor() {
+  if (state.countSkill.checks <= 0) return 0.35;
+  const exactRate = state.countSkill.exact / state.countSkill.checks;
+  const withinOneRate = state.countSkill.withinOne / state.countSkill.checks;
+  return Math.max(0.2, Math.min(1, (0.5 * exactRate) + (0.5 * withinOneRate)));
+}
+
+function checkCountSkill() {
+  const guess = Number(el.rcGuess.value);
+  if (!Number.isFinite(guess)) return;
+
+  const error = Math.abs(Math.round(guess) - state.rc);
+  state.countSkill.checks++;
+  state.countSkill.sumAbsError += error;
+  if (error === 0) state.countSkill.exact++;
+  if (error <= 1) state.countSkill.withinOne++;
+  state.countSkill.lastError = error;
+  el.rcGuess.value = '';
+}
+
+function resetCountSkill() {
+  state.countSkill = {
+    checks: 0,
+    exact: 0,
+    withinOne: 0,
+    sumAbsError: 0,
+    lastError: null
+  };
 }
 
 function countConfidenceLabel(confidence) {
@@ -684,6 +745,9 @@ function render() {
   const rawBetUnits = canTrustBetCount ? recommendedBetUnits(betTc) : 0;
   const betUnits = canTrustBetCount ? scaleBetByConfidence(rawBetUnits, countConfidence) : 0;
   const countConfidencePct = Math.round(countConfidence * 100);
+  const avgAbsError = state.countSkill.checks > 0
+    ? (state.countSkill.sumAbsError / state.countSkill.checks)
+    : null;
   const unit = unitSize();
   const currentHandBet = betUnits * unit;
 
@@ -716,6 +780,14 @@ function render() {
   el.edgeVal.textContent = `${edgePct >= 0 ? '+' : ''}${edgePct.toFixed(2)}%`;
   el.betTcVal.textContent = canTrustBetCount ? `${betTc}` : 'WARMUP';
   el.countConfVal.textContent = `${countConfidencePct}% ${countConfidenceLabel(countConfidence)}`;
+  if (state.countSkill.checks > 0) {
+    const exactPct = Math.round((state.countSkill.exact / state.countSkill.checks) * 100);
+    const w1Pct = Math.round((state.countSkill.withinOne / state.countSkill.checks) * 100);
+    const errTxt = state.countSkill.lastError === null ? '--' : `${state.countSkill.lastError}`;
+    el.countSkillVal.textContent = `Exact ${exactPct}% | +/-1 ${w1Pct}% | AvgErr ${avgAbsError.toFixed(2)} | LastErr ${errTxt}`;
+  } else {
+    el.countSkillVal.textContent = 'No checks yet';
+  }
   el.betUnits.textContent = `${betUnits}`;
   el.wongVal.textContent = canTrustBetCount && betTc >= MYBOOKIE_RULES.wongInTc && betUnits > 0 ? 'PLAY' : 'WAIT';
   el.bankrollVal.textContent = formatMoney(state.bankroll);
@@ -756,12 +828,13 @@ function render() {
   } else {
     el.recAction.textContent = '---';
     el.recWinrate.textContent = '--';
-    el.recReason.textContent = 'MYBOOKIE ONLY · Smart input: ; dealer, H player, \' others, [/] cycle seat, V smart toggle.';
+    el.recReason.textContent = 'MYBOOKIE ONLY · Smart input: ; dealer, H player, \' others, [/] cycle seat, V smart toggle, C check count.';
     el.actionCard.classList.remove('deviation-active');
   }
 }
 
 function handleKey(e) {
+  if (isEditingField(e)) return;
   if (e.repeat) return;
   const k = e.key.toLowerCase();
 
@@ -836,6 +909,13 @@ function handleKey(e) {
     return;
   }
 
+  if (k === 'c') {
+    pushHistory();
+    checkCountSkill();
+    render();
+    return;
+  }
+
   if (k === 'backspace' || k === 'u') {
     e.preventDefault();
     const snap = state.history.pop();
@@ -864,4 +944,11 @@ function handleKey(e) {
     applyCard(rank);
     render();
   }
+}
+
+function isEditingField(e) {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 }
