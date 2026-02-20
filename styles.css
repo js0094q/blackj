@@ -156,21 +156,58 @@ body{
   flex-wrap:wrap;
 }
 
+.quick-row{
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+
+.pill-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.pill{
+  border-radius:999px;
+  padding:10px 16px;
+}
+
+.pill-active{
+  border-color:#3b82f6;
+  box-shadow:0 0 0 2px rgba(59,130,246,.35);
+}
+
+.quick-controls{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(280px,1fr));
+  gap:18px;
+}
+
+.inline-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
 .state-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:24px;
 }
 
-.bet-grid{
+.metrics-grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:24px;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px 20px;
 }
 
-/* Hide bet ramp UI per request */
+/* Hide bet ramp + count-check UI per request */
 .bet-grid,
-.config-wrap{
+.config-wrap,
+.count-check{
   display:none !important;
 }
 
@@ -225,6 +262,14 @@ button.ghost{
 }
 
 input{
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.1);
+  color:var(--text);
+  border-radius:8px;
+  padding:8px 10px;
+}
+
+select{
   border:1px solid var(--border);
   background:rgba(255,255,255,.1);
   color:var(--text);
