@@ -842,7 +842,7 @@ function render() {
 
   el.dispDealer.textContent = state.dealerCards.join(' ') || '?';
   el.dispDealerTotal.textContent = state.dealerCards.length ? `${handTotal(state.dealerCards)}` : '--';
-  const activeHand = currentHand();
+  const activeHandCards = currentHand();
   const handsLabel = state.hands.some((h) => h.length)
     ? state.hands
         .map((h, idx) => `${idx === state.activeHand ? '*' : ''}${h.join(' ') || '--'}`)
@@ -877,9 +877,8 @@ function render() {
   el.accuracyStats.textContent = formatAccuracyStats(bsErrorRate, indexAcc);
 
   const up = dealerUpCard();
-  const activeHand = currentHand();
-  if (up && activeHand.length >= 2) {
-    const move = recommendMove(activeHand, up, exactTc);
+  if (up && activeHandCards.length >= 2) {
+    const move = recommendMove(activeHandCards, up, exactTc);
     const wr = actionWinrate(move.action);
 
     state.lastRecommendedAction = move.action;
