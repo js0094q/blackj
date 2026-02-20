@@ -42,10 +42,6 @@ const state = {
   otherPlayerHands: [],
   nextOtherSeat: 0,
   mode: 'dealer',
-  autoFlow: false,
-  autoStage: 'player',
-  smartInput: true,
-  nextCardMode: null,
   history: [],
   inputLog: [],
   settings: loadSettings(),
@@ -58,13 +54,6 @@ const state = {
     profitUnits: 0,
     profitDollars: 0,
     byAction: {}
-  },
-  countSkill: {
-    checks: 0,
-    exact: 0,
-    withinOne: 0,
-    sumAbsError: 0,
-    lastError: null
   },
   lastRecommendedAction: null,
   lastBetUnits: 0,
@@ -86,13 +75,11 @@ const el = {
   dispPlayer: document.getElementById('disp-player'),
   dispTable: document.getElementById('disp-table'),
   modeIndicator: document.getElementById('mode-indicator-val'),
-  flowIndicator: document.getElementById('flow-indicator-val'),
   inputLog: document.getElementById('input-log'),
   edgeVal: document.getElementById('edge-val'),
   betUnits: document.getElementById('bet-units'),
   betTcVal: document.getElementById('bet-tc-val'),
   countConfVal: document.getElementById('count-conf-val'),
-  countSkillVal: document.getElementById('count-skill-val'),
   wongVal: document.getElementById('wong-val'),
   bankrollVal: document.getElementById('bankroll-val'),
   unitVal: document.getElementById('unit-val'),
@@ -113,10 +100,7 @@ const el = {
   statsReset: document.getElementById('stats-reset'),
   btnWin: document.getElementById('btn-win'),
   btnLoss: document.getElementById('btn-loss'),
-  btnPush: document.getElementById('btn-push'),
-  rcGuess: document.getElementById('rc-guess'),
-  rcCheck: document.getElementById('rc-check'),
-  rcSkillReset: document.getElementById('rc-skill-reset')
+  btnPush: document.getElementById('btn-push')
 };
 
 for (let i = 1; i <= 5; i++) {
@@ -257,17 +241,6 @@ function bindUiEvents() {
     render();
   });
 
-  el.rcCheck.addEventListener('click', () => {
-    pushHistory();
-    checkCountSkill();
-    render();
-  });
-
-  el.rcSkillReset.addEventListener('click', () => {
-    pushHistory();
-    resetCountSkill();
-    render();
-  });
 }
 
 function readSettingsForm() {
@@ -310,10 +283,6 @@ function captureSnapshot() {
     otherPlayerHands: state.otherPlayerHands.map((cards) => [...cards]),
     nextOtherSeat: state.nextOtherSeat,
     mode: state.mode,
-    autoFlow: state.autoFlow,
-    autoStage: state.autoStage,
-    smartInput: state.smartInput,
-    nextCardMode: state.nextCardMode,
     inputLog: [...state.inputLog],
     settings: cloneSettings(state.settings),
     bankroll: state.bankroll,
@@ -326,7 +295,6 @@ function captureSnapshot() {
       profitDollars: state.performance.profitDollars,
       byAction: JSON.parse(JSON.stringify(state.performance.byAction))
     },
-    countSkill: { ...state.countSkill },
     lastRecommendedAction: state.lastRecommendedAction,
     lastBetUnits: state.lastBetUnits,
     lastResult: state.lastResult
@@ -350,10 +318,6 @@ function restoreSnapshot(snap) {
     : buildOtherPlayerHands(state.settings.otherPlayers);
   state.nextOtherSeat = Number.isInteger(snap.nextOtherSeat) ? snap.nextOtherSeat : 0;
   state.mode = snap.mode;
-  state.autoFlow = snap.autoFlow;
-  state.autoStage = snap.autoStage;
-  state.smartInput = typeof snap.smartInput === 'boolean' ? snap.smartInput : state.smartInput;
-  state.nextCardMode = snap.nextCardMode || null;
   state.inputLog = [...snap.inputLog];
   syncOtherPlayerHands(true);
   state.bankroll = snap.bankroll;
@@ -365,13 +329,6 @@ function restoreSnapshot(snap) {
     profitUnits: snap.performance.profitUnits,
     profitDollars: snap.performance.profitDollars,
     byAction: JSON.parse(JSON.stringify(snap.performance.byAction))
-  };
-  state.countSkill = {
-    checks: sanitizeNum(snap.countSkill?.checks, 0),
-    exact: sanitizeNum(snap.countSkill?.exact, 0),
-    withinOne: sanitizeNum(snap.countSkill?.withinOne, 0),
-    sumAbsError: sanitizeNum(snap.countSkill?.sumAbsError, 0),
-    lastError: snap.countSkill?.lastError === null ? null : sanitizeNum(snap.countSkill?.lastError, null)
   };
   state.lastRecommendedAction = snap.lastRecommendedAction;
   state.lastBetUnits = snap.lastBetUnits;
@@ -415,37 +372,7 @@ function penetrationNow() {
 function countConfidenceNow() {
   const inputFactor = Math.min(1, state.cardsSeen / CONFIDENCE_INPUT_TARGET_CARDS);
   const penetrationFactor = Math.min(1, penetrationNow() / CONFIDENCE_PENETRATION_TARGET);
-  return Math.max(0, Math.min(1, (0.7 * inputFactor) + (0.3 * penetrationFactor))) * countSkillFactor();
-}
-
-function countSkillFactor() {
-  if (state.countSkill.checks <= 0) return 0.35;
-  const exactRate = state.countSkill.exact / state.countSkill.checks;
-  const withinOneRate = state.countSkill.withinOne / state.countSkill.checks;
-  return Math.max(0.2, Math.min(1, (0.5 * exactRate) + (0.5 * withinOneRate)));
-}
-
-function checkCountSkill() {
-  const guess = Number(el.rcGuess.value);
-  if (!Number.isFinite(guess)) return;
-
-  const error = Math.abs(Math.round(guess) - state.rc);
-  state.countSkill.checks++;
-  state.countSkill.sumAbsError += error;
-  if (error === 0) state.countSkill.exact++;
-  if (error <= 1) state.countSkill.withinOne++;
-  state.countSkill.lastError = error;
-  el.rcGuess.value = '';
-}
-
-function resetCountSkill() {
-  state.countSkill = {
-    checks: 0,
-    exact: 0,
-    withinOne: 0,
-    sumAbsError: 0,
-    lastError: null
-  };
+  return Math.max(0, Math.min(1, (0.7 * inputFactor) + (0.3 * penetrationFactor)));
 }
 
 function countConfidenceLabel(confidence) {
@@ -535,7 +462,6 @@ function addOtherPlayersCard(rank) {
 function cycleOtherSeat(step) {
   if (state.settings.otherPlayers <= 0) return;
   state.nextOtherSeat = (state.nextOtherSeat + step + state.settings.otherPlayers) % state.settings.otherPlayers;
-  state.nextCardMode = 'table';
 }
 
 function formatOtherPlayersDisplay() {
@@ -550,64 +476,13 @@ function formatOtherPlayersDisplay() {
     .join(' | ');
 }
 
-function smartModeForNextCard() {
-  if (state.nextCardMode) {
-    const mode = state.nextCardMode;
-    state.nextCardMode = null;
-    return mode;
-  }
-
-  // Typical first-round deal order for one player seat: player, dealer upcard, player.
-  if (state.hand.length === 0 && state.dealerCards.length === 0) return 'player';
-  if (state.hand.length === 1 && state.dealerCards.length === 0) return 'dealer';
-  if (state.hand.length === 1 && state.dealerCards.length === 1) return 'player';
-
-  // After opening cards are set, unseen cards are usually other players/table by default.
-  return 'table';
-}
-
-function smartModePreview() {
-  if (state.nextCardMode) return state.nextCardMode;
-
-  if (state.hand.length === 0 && state.dealerCards.length === 0) return 'player';
-  if (state.hand.length === 1 && state.dealerCards.length === 0) return 'dealer';
-  if (state.hand.length === 1 && state.dealerCards.length === 1) return 'player';
-
-  return 'table';
-}
-
-function syncAutoMode() {
-  if (!state.autoFlow) return;
-  state.mode = modeFromAutoStage(state.autoStage);
-}
-
-function setMode(mode, isManual = false) {
+function setMode(mode) {
   state.mode = mode;
-  if (!state.autoFlow || !isManual) return;
-
-  if (mode === 'table') state.autoStage = 'table';
-  else if (mode === 'dealer') state.autoStage = 'dealer';
-  else state.autoStage = dealerUpCard() ? 'post' : 'player';
-}
-
-function advanceAutoFlowAfterCard() {
-  if (!state.autoFlow) return;
-
-  if (state.autoStage === 'player' && state.hand.length >= 2) {
-    state.autoStage = 'table';
-    state.mode = 'table';
-    return;
-  }
-
-  if (state.autoStage === 'dealer' && dealerUpCard()) {
-    state.autoStage = 'post';
-    state.mode = 'player';
-  }
 }
 
 function applyCard(rank) {
   const r = normalizeRank(rank);
-  const targetMode = state.smartInput ? smartModeForNextCard() : state.mode;
+  const targetMode = state.mode;
 
   state.rc += (HILO_VALUES[r] || 0);
   state.cardsSeen++;
@@ -617,7 +492,6 @@ function applyCard(rank) {
   else addOtherPlayersCard(r);
 
   addInputLog(targetMode, r);
-  advanceAutoFlowAfterCard();
 }
 
 function handTotal(cards) {
@@ -663,34 +537,15 @@ function resetHand() {
   state.otherPlayerHands = buildOtherPlayerHands(state.settings.otherPlayers);
   state.nextOtherSeat = 0;
   state.inputLog = [];
-  state.nextCardMode = null;
   state.lastRecommendedAction = null;
   state.lastBetUnits = 0;
-  if (state.autoFlow) {
-    state.autoStage = 'player';
-    state.mode = 'player';
-  }
+  state.mode = 'player';
 }
 
 function resetShoe() {
   state.rc = 0;
   state.cardsSeen = 0;
   resetHand();
-}
-
-function toggleAutoFlow() {
-  state.autoFlow = !state.autoFlow;
-  if (!state.autoFlow) return;
-
-  if (dealerUpCard()) state.autoStage = 'post';
-  else if (state.hand.length < 2) state.autoStage = 'player';
-  else state.autoStage = 'table';
-  syncAutoMode();
-}
-
-function toggleSmartInput() {
-  state.smartInput = !state.smartInput;
-  state.nextCardMode = null;
 }
 
 function actionWinrate(action) {
@@ -745,13 +600,9 @@ function render() {
   const rawBetUnits = canTrustBetCount ? recommendedBetUnits(betTc) : 0;
   const betUnits = canTrustBetCount ? scaleBetByConfidence(rawBetUnits, countConfidence) : 0;
   const countConfidencePct = Math.round(countConfidence * 100);
-  const avgAbsError = state.countSkill.checks > 0
-    ? (state.countSkill.sumAbsError / state.countSkill.checks)
-    : null;
   const unit = unitSize();
   const currentHandBet = betUnits * unit;
 
-  el.rc.textContent = state.rc;
   el.tc.textContent = displayTc.toFixed(1);
   el.tcBand.textContent = band.label;
   el.tcBand.className = 'hud-band ' + band.cls;
@@ -761,33 +612,12 @@ function render() {
   el.dispDealerTotal.textContent = state.dealerCards.length ? `${handTotal(state.dealerCards)}` : '--';
   el.dispPlayer.textContent = state.hand.join(' ') || '--';
   el.dispTable.textContent = formatOtherPlayersDisplay();
-  if (state.smartInput) {
-    el.modeIndicator.textContent = `SMART->${modeLabel(smartModePreview())}`;
-  } else {
-    el.modeIndicator.textContent = modeLabel(state.mode);
-  }
-  if (state.smartInput) {
-    el.flowIndicator.textContent = state.nextCardMode
-      ? `SMART (NEXT ${modeLabel(state.nextCardMode)})`
-      : 'SMART';
-  } else {
-    el.flowIndicator.textContent = state.autoFlow
-      ? `AUTO (${state.autoStage.toUpperCase()})`
-      : 'MANUAL';
-  }
+  el.modeIndicator.textContent = modeLabel(state.mode);
   el.inputLog.textContent = state.inputLog.join('  ') || '--';
 
   el.edgeVal.textContent = `${edgePct >= 0 ? '+' : ''}${edgePct.toFixed(2)}%`;
   el.betTcVal.textContent = canTrustBetCount ? `${betTc}` : 'WARMUP';
   el.countConfVal.textContent = `${countConfidencePct}% ${countConfidenceLabel(countConfidence)}`;
-  if (state.countSkill.checks > 0) {
-    const exactPct = Math.round((state.countSkill.exact / state.countSkill.checks) * 100);
-    const w1Pct = Math.round((state.countSkill.withinOne / state.countSkill.checks) * 100);
-    const errTxt = state.countSkill.lastError === null ? '--' : `${state.countSkill.lastError}`;
-    el.countSkillVal.textContent = `Exact ${exactPct}% | +/-1 ${w1Pct}% | AvgErr ${avgAbsError.toFixed(2)} | LastErr ${errTxt}`;
-  } else {
-    el.countSkillVal.textContent = 'No checks yet';
-  }
   el.betUnits.textContent = `${betUnits}`;
   el.wongVal.textContent = canTrustBetCount && betTc >= MYBOOKIE_RULES.wongInTc && betUnits > 0 ? 'PLAY' : 'WAIT';
   el.bankrollVal.textContent = formatMoney(state.bankroll);
@@ -799,10 +629,7 @@ function render() {
   el.statsProfit.textContent = `${state.performance.profitUnits.toFixed(1)}u / ${formatMoney(state.performance.profitDollars)}`;
   el.statsLast.textContent = state.lastResult;
 
-  el.stateTag.textContent = state.autoFlow ? 'MYBOOKIE AUTO' : 'MYBOOKIE READY';
-  if (state.smartInput) {
-    el.stateTag.textContent = 'MYBOOKIE SMART';
-  }
+  el.stateTag.textContent = 'MYBOOKIE READY';
 
   const up = dealerUpCard();
   if (up && state.hand.length >= 2) {
@@ -828,7 +655,7 @@ function render() {
   } else {
     el.recAction.textContent = '---';
     el.recWinrate.textContent = '--';
-    el.recReason.textContent = 'MYBOOKIE ONLY · Smart input: ; dealer, H player, \' others, [/] cycle seat, V smart toggle, C check count.';
+    el.recReason.textContent = 'Enter cards, set mode with D/L/T. X resets shoe, N starts a new hand.';
     el.actionCard.classList.remove('deviation-active');
   }
 }
@@ -838,60 +665,18 @@ function handleKey(e) {
   if (e.repeat) return;
   const k = e.key.toLowerCase();
 
-  if (k === 'g') {
-    setMode('dealer', true);
+  if (k === 'd') {
+    setMode('dealer');
     render();
     return;
   }
   if (k === 'l') {
-    setMode('player', true);
+    setMode('player');
     render();
     return;
   }
   if (k === 't') {
-    setMode('table', true);
-    render();
-    return;
-  }
-
-  if (k === 'm') {
-    toggleAutoFlow();
-    render();
-    return;
-  }
-  if (k === 'v') {
-    toggleSmartInput();
-    render();
-    return;
-  }
-  if (k === '[') {
-    cycleOtherSeat(-1);
-    render();
-    return;
-  }
-  if (k === ']') {
-    cycleOtherSeat(1);
-    render();
-    return;
-  }
-  if (k === ';' && state.smartInput) {
-    state.nextCardMode = 'dealer';
-    render();
-    return;
-  }
-  if (k === 'h' && state.smartInput) {
-    state.nextCardMode = 'player';
-    render();
-    return;
-  }
-  if (k === "'" && state.smartInput) {
-    state.nextCardMode = 'table';
-    render();
-    return;
-  }
-  if (k === ';' && state.autoFlow) {
-    state.autoStage = 'dealer';
-    syncAutoMode();
+    setMode('table');
     render();
     return;
   }
@@ -905,13 +690,6 @@ function handleKey(e) {
   if (k === 'y' || k === '-') {
     pushHistory();
     recordOutcome('L');
-    render();
-    return;
-  }
-
-  if (k === 'c') {
-    pushHistory();
-    checkCountSkill();
     render();
     return;
   }
@@ -930,7 +708,7 @@ function handleKey(e) {
     render();
     return;
   }
-  if (k === ' ') {
+  if (k === 'n') {
     e.preventDefault();
     pushHistory();
     resetHand();
