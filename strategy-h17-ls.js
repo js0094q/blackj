@@ -166,8 +166,9 @@ export function recommendMove(hand, up, tc) {
 
   const base = baseMove(hand, up);
   const dev = deviation(hand, up, tc, base);
+  const shouldApplyDeviation = dev && !(base.action === R && dev.action !== R && dev.action !== I);
 
-  if (dev) {
+  if (shouldApplyDeviation) {
     return {
       action: dev.action,
       baseAction: base.action,
