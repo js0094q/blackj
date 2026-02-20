@@ -56,6 +56,27 @@
 
     <div class="divider"></div>
 
+    <div class="quick-row">
+      <div>
+        <div class="state-k">Action Taken (optional)</div>
+        <select id="actual-action">
+          <option value="AUTO">Follow Rec</option>
+          <option value="HIT">Hit</option>
+          <option value="STAND">Stand</option>
+          <option value="DOUBLE">Double</option>
+          <option value="SPLIT">Split</option>
+          <option value="SURRENDER">Surrender</option>
+        </select>
+      </div>
+      <div class="pill-row">
+        <button id="hand-a" type="button" class="pill pill-active">HAND A</button>
+        <button id="hand-b" type="button" class="pill">HAND B</button>
+        <button id="hand-clear" type="button" class="ghost">CLEAR HANDS</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
     <div class="result-row">
       <button id="btn-win" type="button">WIN (W)</button>
       <button id="btn-loss" type="button">LOSS (-/Y)</button>
@@ -68,6 +89,24 @@
     <div class="recent-row">
       <div class="state-k">Recent Inputs</div>
       <div id="input-log" class="state-v">--</div>
+    </div>
+
+    <div class="quick-controls">
+      <div>
+        <div class="state-k">Seats Occupied (0-6)</div>
+        <div class="inline-row">
+          <input id="seat-count" type="number" min="0" max="6" step="1">
+          <button id="seat-apply" type="button">APPLY SEATS</button>
+        </div>
+      </div>
+      <div>
+        <div class="state-k">Decks Remaining (est)</div>
+        <div class="inline-row">
+          <input id="decks-override" type="number" min="0.25" max="6" step="0.25" placeholder="e.g. 3.5">
+          <button id="decks-apply" type="button">SET</button>
+          <button id="decks-clear" type="button" class="ghost">CLEAR</button>
+        </div>
+      </div>
     </div>
 
     <div class="divider"></div>
@@ -91,7 +130,7 @@
 
     <div class="state-grid">
       <div>
-        <div class="state-k">Other Player Deals</div>
+        <div class="state-k">Seats</div>
         <div id="disp-table" class="state-v">--</div>
       </div>
       <div>
@@ -106,7 +145,11 @@
 
     <div class="divider"></div>
 
-    <div class="bet-grid">
+    <div class="metrics-grid">
+      <div>
+        <div class="state-k">RC</div>
+        <div id="rc-val" class="state-v">0</div>
+      </div>
       <div>
         <div class="state-k">Est. Edge</div>
         <div id="edge-val" class="state-v">-0.60%</div>
@@ -122,6 +165,14 @@
       <div>
         <div class="state-k">Bet Units</div>
         <div id="bet-units" class="state-v">0</div>
+      </div>
+      <div>
+        <div class="state-k">Average Bet</div>
+        <div id="avg-bet-val" class="state-v">0</div>
+      </div>
+      <div>
+        <div class="state-k">Risk of Ruin</div>
+        <div id="ror-val" class="state-v">--</div>
       </div>
       <div>
         <div class="state-k">Wong</div>
@@ -142,6 +193,22 @@
       <div>
         <div class="state-k">Profit</div>
         <div id="stats-profit" class="state-v">0.0u / $0.00</div>
+      </div>
+      <div>
+        <div class="state-k">TC Distribution</div>
+        <div id="tc-dist" class="state-v">--</div>
+      </div>
+      <div>
+        <div class="state-k">Bust Rate / Dealer Bust Capture</div>
+        <div id="bust-stats" class="state-v">--</div>
+      </div>
+      <div>
+        <div class="state-k">Bet Ramp</div>
+        <div id="ramp-quick" class="state-v">--</div>
+      </div>
+      <div>
+        <div class="state-k">Basic Strat Error / Index Accuracy</div>
+        <div id="accuracy-stats" class="state-v">--</div>
       </div>
     </div>
 
