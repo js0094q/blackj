@@ -262,7 +262,7 @@
   const IDS = [
     "tcVal", "rcVal", "cardsDealtVal", "decksRemainVal", "edgeVal", "betVal", "bandBadge",
     "phaseVal", "handNoVal", "turnVal", "focusVal", "focusPrevBtn", "focusNextBtn",
-    "dealerPanel", "dealerCards", "userSeatGrid", "tableSeatGrid",
+    "dealerPanel", "dealerCards", "activeSeatPanel", "activeSeatLabel", "activeSeatMeta", "activeSeatCards", "activeSeatStatus", "userSeatGrid", "tableSeatGrid",
     "actionVal", "guideLine", "detailLine", "targetVal", "activeSideBetStrip", "seatRecList",
     "hitBtn", "standBtn", "doubleBtn", "splitBtn", "surrenderBtn", "insuranceBtn", "continuePromptBtn",
     "nextHandBtn", "autoPlayBtn", "resetBtn", "settingsBtn",
@@ -1323,15 +1323,83 @@
     return strip;
   }
 
+  function primarySeatSnapshot() {
+    let seat = state.turn.seatId ? getUserSeat(state.turn.seatId) : null;
+    let handIndex = seat ? state.turn.handIndex : 0;
+
+    if (!seat) {
+      const focusedSeat = getUserSeat(state.activeTargetId);
+      if (focusedSeat && focusedSeat.active) {
+        seat = focusedSeat;
+        handIndex = seatPreviewHandIndex(focusedSeat);
+      }
+    }
+
+    if (!seat) {
+      seat = activeUserSeats()[0] || null;
+      handIndex = seat ? seatPreviewHandIndex(seat) : 0;
+    }
+
+    if (!seat) return null;
+    const hand = seat.hands[handIndex] || seat.hands[0] || null;
+    if (!hand) return null;
+    return { seat, handIndex, hand };
+  }
+
   function renderDealer() {
     els.dealerPanel.classList.toggle("is-focus", state.activeTargetId === "dealer");
     els.dealerPanel.classList.toggle("is-turn", false);
     const cards = renderCardCollection(
       state.dealerHand.cards,
       !state.dealerHand.revealed && state.dealerHand.cards.length >= 2,
-      "Awaiting upcard"
+      "Awaiting cards"
     );
     els.dealerCards.replaceChildren(...Array.from(cards.childNodes));
+  }
+
+  function renderActiveSeat() {
+    const snapshot = primarySeatSnapshot();
+    els.activeSeatPanel.classList.toggle("is-focus", !!(snapshot && state.activeTargetId === snapshot.seat.id));
+    els.activeSeatPanel.classList.toggle("is-turn", !!(snapshot && state.turn.seatId === snapshot.seat.id));
+
+    if (!snapshot) {
+      els.activeSeatLabel.textContent = "No active seat";
+      els.activeSeatMeta.textContent = "Set at least one user seat";
+      const empty = renderCardCollection([], false, "No cards");
+      els.activeSeatCards.replaceChildren(...Array.from(empty.childNodes));
+      els.activeSeatStatus.replaceChildren();
+      return;
+    }
+
+    const { seat, handIndex, hand } = snapshot;
+    const seatLabel = seat.hands.length > 1 ? `${seat.label} · Hand ${handIndex + 1}` : seat.label;
+    const statusBits = [Engine.describeHand(hand.cards)];
+    if (seat.id === state.turn.seatId) {
+      statusBits.unshift("Active");
+    } else if (state.phase === "hand_complete") {
+      statusBits.unshift("Settled");
+    } else {
+      statusBits.unshift("Ready");
+    }
+
+    els.activeSeatLabel.textContent = seatLabel;
+    els.activeSeatMeta.textContent = statusBits.filter(Boolean).join(" · ");
+
+    const cards = renderCardCollection(hand.cards, false, "Awaiting cards");
+    els.activeSeatCards.replaceChildren(...Array.from(cards.childNodes));
+
+    const badgeContainer = createNode("div", "badge-row");
+    handBadges(hand).forEach((flag) => badgeContainer.appendChild(createNode("span", "badge", flag)));
+    if (seat.insuranceTaken && state.phase !== "insurance_surrender") {
+      badgeContainer.appendChild(createNode("span", "badge", "Insurance"));
+    }
+    if (seat.insuranceResult) {
+      badgeContainer.appendChild(createNode("span", "badge", seat.insuranceResult));
+    }
+    if (state.phase === "hand_complete") {
+      badgeContainer.appendChild(createNode("span", "badge", `Net ${formatUnits(seat.netUnits)}`));
+    }
+    els.activeSeatStatus.replaceChildren(...Array.from(badgeContainer.childNodes));
   }
 
   function renderUserSeats() {
@@ -1345,14 +1413,14 @@
       const head = createNode("div", "seat-head");
       const headLeft = createNode("div");
       headLeft.appendChild(createNode("div", "zone-label", seat.label));
-      headLeft.appendChild(createNode("div", "seat-title", seat.subtitle));
+      headLeft.appendChild(createNode("div", "seat-title", `${seat.hands.length} hand${seat.hands.length === 1 ? "" : "s"}`));
 
       const summaryBits = [];
       if (seat.insuranceResult) summaryBits.push(seat.insuranceResult);
       if (state.phase === "hand_complete") summaryBits.push(`Net ${formatUnits(seat.netUnits)}`);
       if (!summaryBits.length) {
         if (seat.id === state.turn.seatId) {
-          summaryBits.push(`Active hand ${state.turn.handIndex + 1}`);
+          summaryBits.push(`Turn · Hand ${state.turn.handIndex + 1}`);
         } else {
           summaryBits.push("Waiting");
         }
@@ -1363,8 +1431,9 @@
       panel.appendChild(head);
 
       const recommendation = seatRecommendation(seat);
-      const sideBetStrip = renderSideBetStrip(recommendation && recommendation.recommendation);
-      if (sideBetStrip.childNodes.length) panel.appendChild(sideBetStrip);
+      if (recommendation) {
+        panel.appendChild(createNode("div", "seat-summary", `Next: ${recommendation.recommendation.action}`));
+      }
 
       const hands = createNode("div", "seat-hands");
       seat.hands.forEach((hand, index) => {
@@ -1375,7 +1444,7 @@
 
         const header = createNode("div", "seat-hand-head");
         const headerLeft = createNode("div");
-        headerLeft.appendChild(createNode("div", "seat-hand-title", seat.hands.length > 1 ? `Hand ${index + 1}` : "Main Hand"));
+        headerLeft.appendChild(createNode("div", "seat-hand-title", seat.hands.length > 1 ? `Hand ${index + 1}` : "Hand"));
         headerLeft.appendChild(createNode("div", "seat-hand-meta", Engine.describeHand(hand.cards)));
         header.appendChild(headerLeft);
 
@@ -1392,9 +1461,9 @@
 
         const result = createNode("div", "result-line");
         if (hand.result) {
-          result.textContent = `${hand.result} · ${hand.resultDetail} · ${formatUnits(hand.netUnits)}`;
+          result.textContent = `${hand.result} · ${formatUnits(hand.netUnits)}`;
         } else {
-          result.textContent = hand.completed ? "Resolved" : "In play";
+          result.textContent = hand.completed ? "Resolved" : "Live";
         }
         shell.appendChild(result);
         hands.appendChild(shell);
@@ -1412,7 +1481,7 @@
     const seats = occupiedTableSeats();
 
     if (!seats.length) {
-      fragment.appendChild(createNode("div", "empty-copy", "No observed seats. All occupied seats belong to you."));
+      fragment.appendChild(createNode("div", "empty-copy", "No observed seats in play."));
       els.tableSeatGrid.replaceChildren(fragment);
       return;
     }
@@ -1425,12 +1494,12 @@
       const head = createNode("div", "seat-head");
       const left = createNode("div");
       left.appendChild(createNode("div", "zone-label", seat.label));
-      left.appendChild(createNode("div", "seat-title", seat.cards.length >= 2 ? "Observed hand" : "Awaiting opening cards"));
+      left.appendChild(createNode("div", "seat-title", seat.cards.length >= 2 ? "Observed" : "Opening"));
       const right = createNode("div", "seat-summary", `${seat.cards.length} card${seat.cards.length === 1 ? "" : "s"}`);
       head.appendChild(left);
       head.appendChild(right);
       panel.appendChild(head);
-      panel.appendChild(renderCardCollection(seat.cards, false, "No cards yet"));
+      panel.appendChild(renderCardCollection(seat.cards, false, "No cards"));
       fragment.appendChild(panel);
     });
 
@@ -1439,38 +1508,39 @@
 
   function formatRecReason(recommendation) {
     if (!recommendation) return "";
-    if (recommendation.reason === "index-deviation" && recommendation.explanation.matchedDeviationIndex) {
-      return `Index ${recommendation.explanation.matchedDeviationIndex} @ ${recommendation.explanation.threshold}`;
+    const explanation = recommendation.explanation || {};
+    if (recommendation.reason === "index-deviation" && explanation.matchedDeviationIndex) {
+      return `Index ${explanation.matchedDeviationIndex} @ ${explanation.threshold}`;
     }
-    if (recommendation.explanation.fallbackReason === "count-system-deviation-table-unavailable") {
-      return `Basic fallback (${Engine.countSystems[state.prefs.countSystem].name} deviations not loaded)`;
+    if (explanation.fallbackReason === "count-system-deviation-table-unavailable") {
+      return "Basic fallback";
     }
-    if (recommendation.explanation.fallbackReason === "basic-only-selected") {
-      return "Basic strategy only";
+    if (explanation.fallbackReason === "basic-only-selected") {
+      return "Basic only";
     }
     if (recommendation.reason === "side-bet-only") {
-      return "Side-bet status only";
+      return "Side-bet only";
     }
     if (recommendation.reason === "insufficient-hand-state") {
-      return "Need full hand state";
+      return "Need full hand";
     }
-    return "Basic strategy";
+    return "Basic";
   }
 
   function recommendationView() {
     if (state.phase === "idle" || state.phase === "next_hand_ready") {
       return {
         action: "READY",
-        guide: "Start by entering the dealer upcard, your seat cards, and any occupied table seats.",
-        detail: "Cycle focus with Tab / Shift+Tab or C / X. Observed seats enter cards fast and still affect count."
+        guide: "Enter dealer upcard and opening cards.",
+        detail: "Use Tab/C/X to switch focus. Input rank keys or keypad."
       };
     }
 
     if (state.phase === "initial_deal_setup") {
       return {
         action: "DEAL",
-        guide: `Complete the opening layout: dealer upcard, ${state.tableConfig.userSeatCount} user seat${state.tableConfig.userSeatCount === 1 ? "" : "s"}, and ${state.tableConfig.totalSeats - state.tableConfig.userSeatCount} observed seat${state.tableConfig.totalSeats - state.tableConfig.userSeatCount === 1 ? "" : "s"}.`,
-        detail: "Dealer hole card is auto-dealt from the shoe when all occupied seats have their opening cards."
+        guide: `Complete opening cards for ${state.tableConfig.totalSeats} seat${state.tableConfig.totalSeats === 1 ? "" : "s"} in play.`,
+        detail: "Dealer hole card auto-deals when the opening layout is complete."
       };
     }
 
@@ -1478,7 +1548,7 @@
     if (!dominant) {
       return {
         action: state.phase === "hand_complete" ? "SETTLED" : "WAIT",
-        guide: state.phase === "hand_complete" ? "Hand settled. Press Enter for the next hand." : "Awaiting state sync.",
+        guide: state.phase === "hand_complete" ? "Hand settled. Press Enter for next hand." : "Awaiting state sync.",
         detail: ""
       };
     }
@@ -1486,44 +1556,46 @@
     const recommendation = dominant.recommendation;
     const handLabel = `${dominant.seat.label}${dominant.seat.hands.length > 1 ? ` · Hand ${dominant.handIndex + 1}` : ""}`;
     const focusWarning = state.activeTargetId !== dominant.seat.id
-      ? `Select ${dominant.seat.label} to apply action keys.`
+      ? `Focus ${dominant.seat.label} to apply action keys.`
       : "";
 
     if (state.phase === "insurance_surrender") {
       if (state.promptStage === "insurance") {
         const insuranceText = recommendation.insurance.recommended
-          ? `Insurance is positive at ${recommendation.insurance.evaluatedTc}.`
-          : "Insurance is not a positive-count take.";
+          ? `Insurance +EV at TC ${recommendation.insurance.evaluatedTc}.`
+          : "Insurance not +EV.";
         return {
           action: recommendation.insurance.recommended ? "INSURE" : "PROMPT",
           guide: `${handLabel} · ${Engine.describeHand(dominant.context.hand.cards)} vs ${dominant.context.dealerUp}. ${insuranceText}`,
-          detail: [focusWarning, "I toggles insurance. Space continues to the next prompt."].filter(Boolean).join(" ")
+          detail: [focusWarning, "I toggle · Space continue"].filter(Boolean).join(" · ")
         };
       }
 
       return {
         action: recommendation.action === Engine.actions.SURRENDER ? "SURRENDER" : "PLAY ON",
-        guide: `${handLabel} · ${Engine.describeHand(dominant.context.hand.cards)} vs ${dominant.context.dealerUp}. ${formatRecReason(recommendation)}.`,
-        detail: [focusWarning, "U surrenders. Space skips surrender and moves on."].filter(Boolean).join(" ")
+        guide: `${handLabel} · ${Engine.describeHand(dominant.context.hand.cards)} vs ${dominant.context.dealerUp} · ${formatRecReason(recommendation)}`,
+        detail: [focusWarning, "U surrender · Space continue"].filter(Boolean).join(" · ")
       };
     }
 
     let guide = `${handLabel} · ${Engine.describeHand(dominant.context.hand.cards)} vs ${dominant.context.dealerUp} · ${formatRecReason(recommendation)}`;
-    if (recommendation.explanation.description) {
-      guide += ` · ${recommendation.explanation.description}`;
+    const detailBits = [];
+
+    if (recommendation.explanation && recommendation.explanation.description) {
+      detailBits.push(recommendation.explanation.description);
     }
     if (recommendation.downgradedFrom === Engine.actions.DOUBLE) {
-      guide += " · Double downgraded because double is no longer legal.";
+      detailBits.push("Double fallback (illegal).");
     } else if (recommendation.downgradedFrom === Engine.actions.SPLIT) {
-      guide += " · Split downgraded because the split limit is already used.";
+      detailBits.push("Split fallback (limit).");
     } else if (recommendation.downgradedFrom === Engine.actions.SURRENDER) {
-      guide += " · Surrender downgraded because it is no longer legal.";
+      detailBits.push("Surrender fallback (illegal).");
     }
 
     return {
       action: recommendation.action,
       guide,
-      detail: [focusWarning, "H hit · S stand · D double · P split · Backspace undo · Enter next hand"].filter(Boolean).join(" ")
+      detail: [focusWarning].concat(detailBits).filter(Boolean).join(" · ")
     };
   }
 
@@ -1549,6 +1621,9 @@
       card.appendChild(createNode("div", "rec-seat-meta", formatRecReason(snapshot.recommendation)));
       fragment.appendChild(card);
     });
+    if (!fragment.childNodes.length) {
+      fragment.appendChild(createNode("div", "empty-copy", "No active recommendation seats."));
+    }
     els.seatRecList.replaceChildren(fragment);
   }
 
@@ -1592,6 +1667,7 @@
     els.tapTargetVal.textContent = targetLabel(state.activeTargetId).toUpperCase();
 
     renderDealer();
+    renderActiveSeat();
     renderUserSeats();
     renderTableSeats();
     renderRecommendation();
@@ -1638,6 +1714,11 @@
     els.focusNextBtn.addEventListener("click", () => cycleFocus(1));
 
     els.dealerPanel.addEventListener("click", () => setActiveTarget("dealer"));
+    els.activeSeatPanel.addEventListener("click", () => {
+      const snapshot = primarySeatSnapshot();
+      if (!snapshot) return;
+      setActiveTarget(snapshot.seat.id);
+    });
     els.userSeatGrid.addEventListener("click", (event) => {
       const target = event.target.closest("[data-target]");
       if (!target) return;

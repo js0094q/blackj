@@ -3,132 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BLACKJ - Multi-Seat Live Trainer</title>
+  <title>BLACKJ - Live Assistant</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand-block">
+    <div class="brand-wrap">
       <div class="brand">BLACKJ</div>
-      <div class="brand-sub">6D H17 index + live table trainer</div>
+      <div class="brand-sub">Live dealer assist</div>
     </div>
     <div class="top-actions">
       <button id="nextHandBtn" class="btn" type="button">Next Hand</button>
-      <button id="autoPlayBtn" class="btn ghost" type="button">Auto Play</button>
-      <button id="resetBtn" class="btn danger" type="button">Reset Shoe</button>
+      <button id="autoPlayBtn" class="btn ghost" type="button">Auto</button>
+      <button id="resetBtn" class="btn ghost" type="button">Reset Shoe</button>
       <button id="settingsBtn" class="btn ghost" type="button">Settings</button>
     </div>
   </header>
 
   <main class="app">
-    <section class="primary">
-      <div class="metric">
-        <div class="label">True Count</div>
-        <div id="tcVal" class="tc-value">0.00</div>
-        <div class="mini">
-          <span>RC <strong id="rcVal">0</strong></span>
-          <span>Cards <strong id="cardsDealtVal">0</strong></span>
-          <span>Decks Rem <strong id="decksRemainVal">6.00</strong></span>
-        </div>
+    <section class="count-strip" aria-label="Count summary">
+      <div class="count-chip">
+        <div class="chip-label">TC</div>
+        <div id="tcVal" class="chip-value chip-value-lg">0.00</div>
       </div>
-
-      <div class="metric metric-right">
-        <div class="label">Recommended Bet</div>
-        <div id="betVal" class="bet-value">1u</div>
-        <div class="mini mini-right">
-          <span>Edge <strong id="edgeVal">-0.55%</strong></span>
-        </div>
+      <div class="count-chip">
+        <div class="chip-label">RC</div>
+        <div id="rcVal" class="chip-value">0</div>
       </div>
-
-      <div class="metric-strip">
-        <div id="bandBadge" class="band band-neutral">NEUTRAL</div>
+      <div class="count-chip">
+        <div class="chip-label">Decks Rem</div>
+        <div id="decksRemainVal" class="chip-value">6.00</div>
       </div>
-    </section>
-
-    <section class="status-bar">
-      <div class="status-card">
-        <div class="status-label">Phase</div>
-        <div id="phaseVal" class="status-value">Idle</div>
+      <div class="count-chip">
+        <div class="chip-label">Bet</div>
+        <div id="betVal" class="chip-value">1u</div>
       </div>
-      <div class="status-card">
-        <div class="status-label">Hand</div>
-        <div id="handNoVal" class="status-value">Hand 1</div>
-      </div>
-      <div class="status-card wide">
-        <div class="status-label">Turn</div>
-        <div id="turnVal" class="status-value">No active turn</div>
-      </div>
-      <div class="status-card wide">
-        <div class="status-label">Input Focus</div>
-        <div class="status-inline">
-          <div id="focusVal" class="status-value">User Seat 1</div>
-          <div class="focus-actions">
-            <button id="focusPrevBtn" class="btn ghost mini-btn" type="button">Prev Focus</button>
-            <button id="focusNextBtn" class="btn ghost mini-btn" type="button">Next Focus</button>
-          </div>
-        </div>
+      <div class="count-chip subtle-chip">
+        <div class="chip-label">Edge</div>
+        <div id="edgeVal" class="chip-value">-0.55%</div>
       </div>
     </section>
 
-    <section class="board-grid">
-      <article id="dealerPanel" class="zone dealer-zone" data-target="dealer">
-        <div class="zone-head">
-          <div>
-            <div class="zone-label">Dealer</div>
-            <h2>Live Hand</h2>
+    <section class="live-card">
+      <div class="live-head">
+        <div class="focus-block">
+          <span class="chip-label">Focus</span>
+          <div class="focus-controls">
+            <button id="focusPrevBtn" class="btn ghost mini-btn" type="button">Prev</button>
+            <div id="focusVal" class="focus-pill">User Seat 1</div>
+            <button id="focusNextBtn" class="btn ghost mini-btn" type="button">Next</button>
           </div>
-          <div class="zone-copy">Hole card stays hidden until reveal</div>
         </div>
-        <div id="dealerCards" class="cards"></div>
-      </article>
+        <div class="state-line">
+          <span id="phaseVal" class="state-pill">Idle</span>
+          <span id="handNoVal" class="state-pill">Hand 1</span>
+          <span id="turnVal" class="state-pill state-pill-wide">No active turn</span>
+          <span id="bandBadge" class="band band-neutral">NEUTRAL</span>
+        </div>
+      </div>
 
-      <section class="recommendation">
-        <div class="rec-label">Recommended Move</div>
+      <div class="live-grid">
+        <article id="dealerPanel" class="zone compact-zone" data-target="dealer">
+          <div class="zone-headline">
+            <span class="zone-label">Dealer</span>
+          </div>
+          <div id="dealerCards" class="cards"></div>
+        </article>
+
+        <article id="activeSeatPanel" class="zone compact-zone">
+          <div class="zone-headline">
+            <span id="activeSeatLabel" class="zone-label">User Seat 1</span>
+            <span id="activeSeatMeta" class="zone-meta">Waiting</span>
+          </div>
+          <div id="activeSeatCards" class="cards"></div>
+          <div id="activeSeatStatus" class="badge-row"></div>
+        </article>
+      </div>
+
+      <section class="recommendation-card">
+        <div class="rec-topline">
+          <span class="rec-label">Recommended Move</span>
+          <span id="targetVal" class="target-pill">USER SEAT 1</span>
+        </div>
         <div id="actionVal" class="rec-value">READY</div>
-        <div id="guideLine" class="rec-sub">Start by entering the occupied seats and dealer upcard.</div>
-        <div id="detailLine" class="rec-detail">Card entry follows the active target.</div>
-        <div class="rec-hint">
-          <span>Target <strong id="targetVal" class="target-pill">USER SEAT 1</strong></span>
-          <span>Hotkeys: Tab / Shift+Tab, C / X focus, H / S / D / P actions, U surrender, I insurance, M auto play</span>
-        </div>
+        <div id="guideLine" class="rec-guide">Enter opening cards.</div>
+        <div id="detailLine" class="rec-detail">Rank keys or keypad. Tab/C/X to change focus.</div>
         <div id="activeSideBetStrip" class="sidebet-strip"></div>
-        <div id="seatRecList" class="rec-seat-list"></div>
       </section>
+
+      <section class="action-bar">
+        <button id="hitBtn" class="btn action-btn" type="button">Hit (H)</button>
+        <button id="standBtn" class="btn action-btn" type="button">Stand (S)</button>
+        <button id="doubleBtn" class="btn action-btn" type="button">Double (D)</button>
+        <button id="splitBtn" class="btn action-btn" type="button">Split (P)</button>
+        <button id="surrenderBtn" class="btn action-btn" type="button">Surrender (U)</button>
+        <button id="insuranceBtn" class="btn action-btn" type="button">Insurance (I)</button>
+        <button id="continuePromptBtn" class="btn action-btn ghost" type="button">Continue (Space)</button>
+      </section>
+
+      <div class="helper-line">Hotkeys: Tab/Shift+Tab or C/X focus, H/S/D/P actions, U surrender, I insurance, M autoplay, Enter next hand, Backspace undo.</div>
     </section>
 
-    <section class="seat-sections">
-      <article class="zone">
-        <div class="zone-head">
-          <div>
-            <div class="zone-label">User Seats</div>
-            <h2>Recommendation Seats</h2>
-          </div>
-          <div class="zone-copy">Only these seats get blackjack advice</div>
-        </div>
+    <details class="collapse-panel" id="seatsPanel">
+      <summary>Seats</summary>
+      <div class="collapse-body">
+        <div class="collapse-subhead">User Seats</div>
         <div id="userSeatGrid" class="user-seat-grid"></div>
-      </article>
-
-      <article class="zone">
-        <div class="zone-head">
-          <div>
-            <div class="zone-label">Other Table Seats</div>
-            <h2>Observed Seats</h2>
-          </div>
-          <div class="zone-copy">Observed cards still affect count and shoe depletion</div>
-        </div>
+        <div class="collapse-subhead">Observed Seats</div>
         <div id="tableSeatGrid" class="table-seat-grid"></div>
-      </article>
-    </section>
+      </div>
+    </details>
 
-    <section class="action-bar">
-      <button id="hitBtn" class="btn action-btn" type="button">Hit (H)</button>
-      <button id="standBtn" class="btn action-btn" type="button">Stand (S)</button>
-      <button id="doubleBtn" class="btn action-btn" type="button">Double (D)</button>
-      <button id="splitBtn" class="btn action-btn" type="button">Split (P)</button>
-      <button id="surrenderBtn" class="btn action-btn" type="button">Surrender (U)</button>
-      <button id="insuranceBtn" class="btn action-btn" type="button">Insurance (I)</button>
-      <button id="continuePromptBtn" class="btn action-btn ghost" type="button">Continue Prompt (Space)</button>
-    </section>
+    <details class="collapse-panel" id="advancedPanel">
+      <summary>Advanced</summary>
+      <div class="collapse-body">
+        <div class="advanced-row">
+          <span>Cards dealt <strong id="cardsDealtVal">0</strong></span>
+        </div>
+        <div id="seatRecList" class="rec-seat-list"></div>
+      </div>
+    </details>
   </main>
 
   <div id="settingsBackdrop" class="backdrop hidden"></div>
@@ -138,98 +132,112 @@
       <button id="settingsCloseBtn" class="btn ghost" type="button">Close</button>
     </div>
 
-    <label>
-      Count System
-      <select id="countSystemSelect">
-        <option value="hilo">Hi-Lo</option>
-        <option value="wong_halves">Wong Halves</option>
-        <option value="hiopt2">Hi-Opt II</option>
-      </select>
-    </label>
-
-    <label>
-      Index Set
-      <select id="indexSetSelect">
-        <option value="basic_only">Basic Only</option>
-        <option value="illustrious18">Illustrious 18</option>
-        <option value="illustrious18_fab4">Illustrious 18 + Fab 4</option>
-        <option value="custom_ready">Custom Ready</option>
-      </select>
-    </label>
-
-    <div class="segmented">
-      <button id="tcModeAutoBtn" class="seg active" type="button">Auto TC</button>
-      <button id="tcModeManualBtn" class="seg" type="button">Manual TC</button>
-    </div>
-
-    <div id="decksRemainField" class="hidden">
-      <label class="range-label">
-        Decks Remaining
-        <span id="decksRemainReadout">3.00</span>
+    <section class="settings-group">
+      <h4>Counting</h4>
+      <label>
+        Count System
+        <select id="countSystemSelect">
+          <option value="hilo">Hi-Lo</option>
+          <option value="wong_halves">Wong Halves</option>
+          <option value="hiopt2">Hi-Opt II</option>
+        </select>
       </label>
-      <input id="decksRemainRange" type="range" min="0.25" max="6" step="0.25" value="3" />
-    </div>
 
-    <label>
-      Total Seats In Play
-      <select id="totalSeatsSelect">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-        <option value="6">6</option>
-        <option value="7">7</option>
-      </select>
-    </label>
+      <label>
+        Index Set
+        <select id="indexSetSelect">
+          <option value="basic_only">Basic Only</option>
+          <option value="illustrious18">Illustrious 18</option>
+          <option value="illustrious18_fab4">Illustrious 18 + Fab 4</option>
+          <option value="custom_ready">Custom Ready</option>
+        </select>
+      </label>
 
-    <label>
-      User Seat Count
-      <select id="userSeatCountSelect">
-        <option value="1">1</option>
-        <option value="2">2</option>
-      </select>
-    </label>
-
-    <div class="drawer-copy">Surrender is wired as a late-surrender toggle for Fab 4 support.</div>
-    <div class="segmented">
-      <button id="surrenderToggleOn" class="seg active" type="button">Surrender On</button>
-      <button id="surrenderToggleOff" class="seg" type="button">Surrender Off</button>
-    </div>
-
-    <label>
-      Bankroll Units
-      <input id="bankrollInput" type="number" min="10" value="100" />
-    </label>
-
-    <label>
-      Kelly Cap
-      <select id="kellySelect">
-        <option value="0.1">10%</option>
-        <option value="0.2">20%</option>
-        <option value="0.25">25%</option>
-        <option value="0.5">50%</option>
-      </select>
-    </label>
-
-    <div id="aceSideField" class="hidden">
-      <div class="drawer-copy">Ace side count is only used with Hi-Opt II.</div>
       <div class="segmented">
-        <button id="aceSideOnBtn" class="seg" type="button">Ace Side On</button>
-        <button id="aceSideOffBtn" class="seg active" type="button">Ace Side Off</button>
+        <button id="tcModeAutoBtn" class="seg active" type="button">Auto TC</button>
+        <button id="tcModeManualBtn" class="seg" type="button">Manual TC</button>
       </div>
-    </div>
 
-    <div class="drawer-copy">Optional side-bet modules stay informational and never replace the blackjack move.</div>
-    <div class="segmented">
-      <button id="pairsToggleOn" class="seg" type="button">Pairs On</button>
-      <button id="pairsToggleOff" class="seg active" type="button">Pairs Off</button>
-    </div>
+      <div id="decksRemainField" class="hidden">
+        <label class="range-label">
+          Decks Remaining
+          <span id="decksRemainReadout">3.00</span>
+        </label>
+        <input id="decksRemainRange" type="range" min="0.25" max="6" step="0.25" value="3" />
+      </div>
 
-    <div class="segmented">
-      <button id="rummyToggleOn" class="seg" type="button">Rummy On</button>
-      <button id="rummyToggleOff" class="seg active" type="button">Rummy Off</button>
-    </div>
+      <div id="aceSideField" class="hidden">
+        <div class="drawer-copy">Ace side count (Hi-Opt II only)</div>
+        <div class="segmented">
+          <button id="aceSideOnBtn" class="seg" type="button">Ace Side On</button>
+          <button id="aceSideOffBtn" class="seg active" type="button">Ace Side Off</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-group">
+      <h4>Table Setup</h4>
+      <label>
+        Total Seats In Play
+        <select id="totalSeatsSelect">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+        </select>
+      </label>
+
+      <label>
+        User Seat Count
+        <select id="userSeatCountSelect">
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+      </label>
+
+      <div class="segmented">
+        <button id="surrenderToggleOn" class="seg active" type="button">Surrender On</button>
+        <button id="surrenderToggleOff" class="seg" type="button">Surrender Off</button>
+      </div>
+    </section>
+
+    <section class="settings-group">
+      <h4>Bankroll / Betting</h4>
+      <label>
+        Bankroll Units
+        <input id="bankrollInput" type="number" min="10" value="100" />
+      </label>
+
+      <label>
+        Kelly Cap
+        <select id="kellySelect">
+          <option value="0.1">10%</option>
+          <option value="0.2">20%</option>
+          <option value="0.25">25%</option>
+          <option value="0.5">50%</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="settings-group">
+      <h4>Optional Side Bets</h4>
+      <div class="segmented">
+        <button id="pairsToggleOn" class="seg" type="button">Pairs On</button>
+        <button id="pairsToggleOff" class="seg active" type="button">Pairs Off</button>
+      </div>
+      <div class="segmented">
+        <button id="rummyToggleOn" class="seg" type="button">Rummy On</button>
+        <button id="rummyToggleOff" class="seg active" type="button">Rummy Off</button>
+      </div>
+    </section>
+
+    <section class="settings-group">
+      <h4>Advanced</h4>
+      <div class="drawer-copy">Settings apply immediately after validation and preserve current counting data.</div>
+    </section>
 
     <div class="drawer-actions">
       <button id="settingsResetBtn" class="btn ghost" type="button">Reset</button>
