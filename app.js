@@ -1404,7 +1404,15 @@
 
   function renderUserSeats() {
     const fragment = document.createDocumentFragment();
-    activeUserSeats().forEach((seat) => {
+    const seats = activeUserSeats();
+
+    if (!seats.length) {
+      fragment.appendChild(createNode("div", "empty-copy", "No user seats."));
+      els.userSeatGrid.replaceChildren(fragment);
+      return;
+    }
+
+    seats.forEach((seat) => {
       const panel = createNode("article", "seat-panel");
       panel.dataset.target = seat.id;
       panel.classList.toggle("is-focus", state.activeTargetId === seat.id);
@@ -1413,7 +1421,7 @@
       const head = createNode("div", "seat-head");
       const headLeft = createNode("div");
       headLeft.appendChild(createNode("div", "zone-label", seat.label));
-      headLeft.appendChild(createNode("div", "seat-title", `${seat.hands.length} hand${seat.hands.length === 1 ? "" : "s"}`));
+      headLeft.appendChild(createNode("div", "seat-title", seat.id === state.turn.seatId ? "Turn seat" : "Tracked"));
 
       const summaryBits = [];
       if (seat.insuranceResult) summaryBits.push(seat.insuranceResult);
@@ -1431,45 +1439,12 @@
       panel.appendChild(head);
 
       const recommendation = seatRecommendation(seat);
-      if (recommendation) {
-        panel.appendChild(createNode("div", "seat-summary", `Next: ${recommendation.recommendation.action}`));
-      }
+      const previewIndex = seatPreviewHandIndex(seat);
+      const previewHand = seat.hands[previewIndex] || seat.hands[0];
+      const cardLine = previewHand && previewHand.cards.length ? previewHand.cards.join(" ") : "--";
+      const actionLine = recommendation ? recommendation.recommendation.action : "WAIT";
+      panel.appendChild(createNode("div", "seat-summary", `${cardLine} · ${actionLine}`));
 
-      const hands = createNode("div", "seat-hands");
-      seat.hands.forEach((hand, index) => {
-        const shell = createNode("div", "seat-hand");
-        if (seat.id === state.turn.seatId && index === state.turn.handIndex) {
-          shell.classList.add("is-turn-hand");
-        }
-
-        const header = createNode("div", "seat-hand-head");
-        const headerLeft = createNode("div");
-        headerLeft.appendChild(createNode("div", "seat-hand-title", seat.hands.length > 1 ? `Hand ${index + 1}` : "Hand"));
-        headerLeft.appendChild(createNode("div", "seat-hand-meta", Engine.describeHand(hand.cards)));
-        header.appendChild(headerLeft);
-
-        if (recommendation && recommendation.handIndex === index) {
-          header.appendChild(createNode("div", "info-chip", recommendation.recommendation.action));
-        }
-
-        shell.appendChild(header);
-        shell.appendChild(renderCardCollection(hand.cards, false, "Awaiting cards"));
-
-        const badges = createNode("div", "badges");
-        handBadges(hand).forEach((flag) => badges.appendChild(createNode("span", "badge", flag)));
-        if (badges.childNodes.length) shell.appendChild(badges);
-
-        const result = createNode("div", "result-line");
-        if (hand.result) {
-          result.textContent = `${hand.result} · ${formatUnits(hand.netUnits)}`;
-        } else {
-          result.textContent = hand.completed ? "Resolved" : "Live";
-        }
-        shell.appendChild(result);
-        hands.appendChild(shell);
-      });
-
-      panel.appendChild(hands);
       fragment.appendChild(panel);
     });
 
@@ -1481,7 +1456,7 @@
     const seats = occupiedTableSeats();
 
     if (!seats.length) {
-      fragment.appendChild(createNode("div", "empty-copy", "No observed seats in play."));
+      fragment.appendChild(createNode("div", "empty-copy", "No observed seats."));
       els.tableSeatGrid.replaceChildren(fragment);
       return;
     }
@@ -1499,7 +1474,7 @@
       head.appendChild(left);
       head.appendChild(right);
       panel.appendChild(head);
-      panel.appendChild(renderCardCollection(seat.cards, false, "No cards"));
+      panel.appendChild(createNode("div", "seat-summary", seat.cards.length ? seat.cards.join(" ") : "--"));
       fragment.appendChild(panel);
     });
 

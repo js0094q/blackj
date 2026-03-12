@@ -10,7 +10,7 @@
   <header class="topbar">
     <div class="brand-wrap">
       <div class="brand">BLACKJ</div>
-      <div class="brand-sub">Live dealer assist</div>
+      <div class="brand-sub">Live dealer control panel</div>
     </div>
     <div class="top-actions">
       <button id="nextHandBtn" class="btn" type="button">Next Hand</button>
@@ -31,7 +31,7 @@
         <div id="rcVal" class="chip-value">0</div>
       </div>
       <div class="count-chip">
-        <div class="chip-label">Decks Rem</div>
+        <div class="chip-label">Decks</div>
         <div id="decksRemainVal" class="chip-value">6.00</div>
       </div>
       <div class="count-chip">
@@ -44,85 +44,106 @@
       </div>
     </section>
 
-    <section class="live-card">
-      <div class="live-head">
-        <div class="focus-block">
-          <span class="chip-label">Focus</span>
-          <div class="focus-controls">
-            <button id="focusPrevBtn" class="btn ghost mini-btn" type="button">Prev</button>
-            <div id="focusVal" class="focus-pill">User Seat 1</div>
-            <button id="focusNextBtn" class="btn ghost mini-btn" type="button">Next</button>
-          </div>
-        </div>
-        <div class="state-line">
+    <section class="play-shell">
+      <section class="table-stage">
+        <div class="focus-strip">
           <span id="phaseVal" class="state-pill">Idle</span>
           <span id="handNoVal" class="state-pill">Hand 1</span>
           <span id="turnVal" class="state-pill state-pill-wide">No active turn</span>
           <span id="bandBadge" class="band band-neutral">NEUTRAL</span>
-        </div>
-      </div>
-
-      <div class="live-grid">
-        <article id="dealerPanel" class="zone compact-zone" data-target="dealer">
-          <div class="zone-headline">
-            <span class="zone-label">Dealer</span>
+          <div class="focus-controls">
+            <button id="focusPrevBtn" class="btn ghost mini-btn" type="button">Prev</button>
+            <span id="focusVal" class="focus-pill">User Seat 1</span>
+            <button id="focusNextBtn" class="btn ghost mini-btn" type="button">Next</button>
           </div>
-          <div id="dealerCards" class="cards"></div>
-        </article>
-
-        <article id="activeSeatPanel" class="zone compact-zone">
-          <div class="zone-headline">
-            <span id="activeSeatLabel" class="zone-label">User Seat 1</span>
-            <span id="activeSeatMeta" class="zone-meta">Waiting</span>
-          </div>
-          <div id="activeSeatCards" class="cards"></div>
-          <div id="activeSeatStatus" class="badge-row"></div>
-        </article>
-      </div>
-
-      <section class="recommendation-card">
-        <div class="rec-topline">
-          <span class="rec-label">Recommended Move</span>
-          <span id="targetVal" class="target-pill">USER SEAT 1</span>
         </div>
-        <div id="actionVal" class="rec-value">READY</div>
-        <div id="guideLine" class="rec-guide">Enter opening cards.</div>
-        <div id="detailLine" class="rec-detail">Rank keys or keypad. Tab/C/X to change focus.</div>
+
+        <section class="recommendation-card">
+          <div class="rec-topline">
+            <span class="rec-label">Recommended Move</span>
+            <span id="targetVal" class="target-pill">USER SEAT 1</span>
+          </div>
+          <div id="actionVal" class="rec-value">READY</div>
+          <div id="guideLine" class="rec-guide">Enter opening cards.</div>
+          <div id="detailLine" class="rec-detail">Rank keys or keypad. Tab/C/X to change focus.</div>
+        </section>
+
+        <div class="hands-row">
+          <article id="dealerPanel" class="zone hero-zone" data-target="dealer">
+            <div class="zone-headline">
+              <span class="zone-label">Dealer</span>
+            </div>
+            <div id="dealerCards" class="cards hero-cards"></div>
+          </article>
+
+          <article id="activeSeatPanel" class="zone hero-zone">
+            <div class="zone-headline">
+              <span id="activeSeatLabel" class="zone-label">User Seat 1</span>
+              <span id="activeSeatMeta" class="zone-meta">Waiting</span>
+            </div>
+            <div id="activeSeatCards" class="cards hero-cards"></div>
+            <div id="activeSeatStatus" class="badge-row"></div>
+          </article>
+        </div>
+
         <div id="activeSideBetStrip" class="sidebet-strip"></div>
       </section>
 
-      <section class="action-bar">
-        <button id="hitBtn" class="btn action-btn" type="button">Hit (H)</button>
-        <button id="standBtn" class="btn action-btn" type="button">Stand (S)</button>
-        <button id="doubleBtn" class="btn action-btn" type="button">Double (D)</button>
-        <button id="splitBtn" class="btn action-btn" type="button">Split (P)</button>
-        <button id="surrenderBtn" class="btn action-btn" type="button">Surrender (U)</button>
-        <button id="insuranceBtn" class="btn action-btn" type="button">Insurance (I)</button>
-        <button id="continuePromptBtn" class="btn action-btn ghost" type="button">Continue (Space)</button>
-      </section>
+      <aside class="right-rail">
+        <section class="rail-section">
+          <div class="rail-title">Card Entry</div>
+          <nav id="tapPad" aria-label="Card keypad">
+            <div class="tap-grid">
+              <button class="pad" data-rank="A" type="button">A</button>
+              <button class="pad" data-rank="2" type="button">2</button>
+              <button class="pad" data-rank="3" type="button">3</button>
 
-      <div class="helper-line">Hotkeys: Tab/Shift+Tab or C/X focus, H/S/D/P actions, U surrender, I insurance, M autoplay, Enter next hand, Backspace undo.</div>
+              <button class="pad" data-rank="4" type="button">4</button>
+              <button class="pad" data-rank="5" type="button">5</button>
+              <button class="pad" data-rank="6" type="button">6</button>
+
+              <button class="pad" data-rank="7" type="button">7</button>
+              <button class="pad" data-rank="8" type="button">8</button>
+              <button class="pad" data-rank="9" type="button">9</button>
+
+              <button id="tapUndo" class="pad special" type="button">Undo</button>
+              <button class="pad ten" data-rank="T" type="button">T</button>
+              <button id="tapTarget" class="pad target" type="button">
+                Focus
+                <span id="tapTargetVal">USER SEAT 1</span>
+              </button>
+            </div>
+          </nav>
+        </section>
+
+        <section class="rail-section compact-info">
+          <div class="rail-title">Stats</div>
+          <div class="advanced-row">
+            <span>Cards dealt <strong id="cardsDealtVal">0</strong></span>
+          </div>
+          <div id="seatRecList" class="rec-seat-list"></div>
+        </section>
+      </aside>
     </section>
 
-    <details class="collapse-panel" id="seatsPanel">
-      <summary>Seats</summary>
-      <div class="collapse-body">
-        <div class="collapse-subhead">User Seats</div>
-        <div id="userSeatGrid" class="user-seat-grid"></div>
-        <div class="collapse-subhead">Observed Seats</div>
-        <div id="tableSeatGrid" class="table-seat-grid"></div>
-      </div>
-    </details>
+    <section class="seat-bar-wrap" aria-label="Seat bar">
+      <div class="seat-bar-head">User Seats</div>
+      <div id="userSeatGrid" class="seat-bar"></div>
+      <div class="seat-bar-head">Observed Seats</div>
+      <div id="tableSeatGrid" class="seat-bar"></div>
+    </section>
 
-    <details class="collapse-panel" id="advancedPanel">
-      <summary>Advanced</summary>
-      <div class="collapse-body">
-        <div class="advanced-row">
-          <span>Cards dealt <strong id="cardsDealtVal">0</strong></span>
-        </div>
-        <div id="seatRecList" class="rec-seat-list"></div>
-      </div>
-    </details>
+    <section class="action-bar">
+      <button id="hitBtn" class="btn action-btn" type="button">Hit (H)</button>
+      <button id="standBtn" class="btn action-btn" type="button">Stand (S)</button>
+      <button id="doubleBtn" class="btn action-btn" type="button">Double (D)</button>
+      <button id="splitBtn" class="btn action-btn" type="button">Split (P)</button>
+      <button id="surrenderBtn" class="btn action-btn" type="button">Surrender (U)</button>
+      <button id="insuranceBtn" class="btn action-btn" type="button">Insurance (I)</button>
+      <button id="continuePromptBtn" class="btn action-btn ghost" type="button">Continue (Space)</button>
+    </section>
+
+    <div class="helper-line">Hotkeys: Tab/Shift+Tab or C/X focus, H/S/D/P actions, U surrender, I insurance, M autoplay, Enter next hand, Backspace undo.</div>
   </main>
 
   <div id="settingsBackdrop" class="backdrop hidden"></div>
@@ -244,29 +265,6 @@
       <button id="settingsApplyBtn" class="btn" type="button">Apply</button>
     </div>
   </aside>
-
-  <nav id="tapPad" aria-label="Card keypad">
-    <div class="tap-grid">
-      <button class="pad" data-rank="A" type="button">A</button>
-      <button class="pad" data-rank="2" type="button">2</button>
-      <button class="pad" data-rank="3" type="button">3</button>
-
-      <button class="pad" data-rank="4" type="button">4</button>
-      <button class="pad" data-rank="5" type="button">5</button>
-      <button class="pad" data-rank="6" type="button">6</button>
-
-      <button class="pad" data-rank="7" type="button">7</button>
-      <button class="pad" data-rank="8" type="button">8</button>
-      <button class="pad" data-rank="9" type="button">9</button>
-
-      <button id="tapUndo" class="pad special" type="button">Undo</button>
-      <button class="pad ten" data-rank="T" type="button">T</button>
-      <button id="tapTarget" class="pad target" type="button">
-        Focus
-        <span id="tapTargetVal">USER SEAT 1</span>
-      </button>
-    </div>
-  </nav>
 
   <div id="toast" class="toast" aria-live="polite"></div>
 
