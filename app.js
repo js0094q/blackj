@@ -261,7 +261,7 @@
   const els = {};
   const IDS = [
     "tcVal", "rcVal", "cardsDealtVal", "decksRemainVal", "edgeVal", "betVal", "bandBadge",
-    "phaseVal", "handNoVal", "turnVal", "focusVal", "focusPrevBtn", "focusNextBtn",
+    "phaseVal", "handNoVal", "turnVal", "turnCue", "focusVal", "focusPrevBtn", "focusNextBtn",
     "dealerPanel", "dealerCards", "activeSeatPanel", "activeSeatLabel", "activeSeatMeta", "activeSeatCards", "activeSeatStatus", "userSeatGrid", "tableSeatGrid",
     "actionVal", "guideLine", "detailLine", "targetVal", "activeSideBetStrip", "seatRecList",
     "hitBtn", "standBtn", "doubleBtn", "splitBtn", "surrenderBtn", "insuranceBtn", "continuePromptBtn",
@@ -1637,6 +1637,14 @@
     els.turnVal.textContent = state.turn.seatId
       ? `${targetLabel(state.turn.seatId)} · Hand ${state.turn.handIndex + 1}`
       : (state.phase === "hand_complete" ? "Round settled" : "No active turn");
+
+    const userTurnActive = !!state.turn.seatId && state.phase !== "hand_complete" && state.phase !== "dealer_resolution";
+    const actionFocusReady = userTurnActive && currentSeatSelected() && state.phase !== "insurance_surrender";
+    els.turnCue.textContent = userTurnActive ? `${targetLabel(state.turn.seatId).toUpperCase()} TURN` : "TABLE INPUT";
+    els.turnCue.className = `turn-cue ${userTurnActive ? (actionFocusReady ? "is-live" : "needs-focus") : ""}`.trim();
+    document.body.classList.toggle("user-turn", userTurnActive);
+    document.body.classList.toggle("action-ready", actionFocusReady);
+
     els.focusVal.textContent = targetLabel(state.activeTargetId);
     els.targetVal.textContent = targetLabel(state.activeTargetId).toUpperCase();
     els.tapTargetVal.textContent = targetLabel(state.activeTargetId).toUpperCase();

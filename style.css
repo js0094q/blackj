@@ -253,6 +253,46 @@ select {
   background: rgba(255, 210, 131, 0.12);
 }
 
+.turn-cue {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.turn-cue.is-live {
+  border-color: rgba(88, 220, 168, 0.58);
+  background: rgba(88, 220, 168, 0.16);
+  color: #7ef4c4;
+  animation: turnPulse 1.3s ease-in-out infinite;
+}
+
+.turn-cue.needs-focus {
+  border-color: rgba(255, 210, 131, 0.56);
+  background: rgba(255, 210, 131, 0.14);
+  color: #ffd283;
+}
+
+@keyframes turnPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(88, 220, 168, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(88, 220, 168, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(88, 220, 168, 0);
+  }
+}
+
 .recommendation-card {
   border-radius: 12px;
   padding: 8px;
@@ -574,6 +614,24 @@ select {
 
 .action-btn {
   min-height: 42px;
+}
+
+body.user-turn #activeSeatPanel {
+  border-color: rgba(88, 220, 168, 0.58);
+  box-shadow: 0 0 0 1px rgba(88, 220, 168, 0.4), 0 0 32px rgba(88, 220, 168, 0.16);
+}
+
+body.user-turn #dealerPanel {
+  opacity: 0.88;
+}
+
+body.user-turn #actionVal {
+  text-shadow: 0 0 22px rgba(88, 220, 168, 0.38);
+}
+
+body.action-ready .action-btn:not(:disabled) {
+  border-color: rgba(88, 220, 168, 0.5);
+  background: rgba(88, 220, 168, 0.14);
 }
 
 .helper-line {
